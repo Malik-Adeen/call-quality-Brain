@@ -6,12 +6,12 @@
 
 ## 1. System Identity
 
-| Property | Value |
-|---|---|
-| Project | AI Call Quality & Agent Performance Analytics System |
-| Purpose | University final presentation demo — 1-week operational lifespan |
-| Target Audience | Professor evaluating a technically rigorous AI pipeline |
-| Deployment Model | Local-first development → Azure GPU for demo day only |
+| Property         | Value                                                            |
+| ---------------- | ---------------------------------------------------------------- |
+| Project          | AI Call Quality & Agent Performance Analytics System             |
+| Purpose          | University final presentation demo — 1-week operational lifespan |
+| Target Audience  | Professor evaluating a technically rigorous AI pipeline          |
+| Deployment Model | Local-first development → Azure GPU for demo day only            |
 
 ---
 
@@ -37,7 +37,7 @@
 | ASR | WhisperX (faster-whisper-turbo) | `large-v2` on GPU · `base` on CPU fallback |
 | Diarization | Pyannote.audio 3.1 | Requires `HF_TOKEN` — accept model terms at hf.co first |
 | PII Redaction | Microsoft Presidio | Mandatory gate — runs before every DB write and every LLM call |
-| LLM Primary | Groq API — `llama-3.1-70b-versatile` | Free tier, zero local VRAM |
+| LLM Primary | Groq API — `llama-3.3-70b-versatile` | Free tier, zero local VRAM |
 | LLM Fallback | OpenRouter — `meta-llama/llama-3.1-70b-instruct` | $10 budget, HTTP 429 overflow only |
 
 ### 2.3 Frontend
@@ -86,7 +86,7 @@ PROVIDER_CHAIN = [
         "name":     "groq",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key":  GROQ_API_KEY,
-        "model":    "llama-3.1-70b-versatile",
+        "model":    "llama-3.3-70b-versatile",
     },
     {
         "name":     "openrouter",

@@ -16,6 +16,8 @@ Full test confirmed: task dispatched against seeded call, 9-field dict returned,
 
 | Bug | Root Cause | Fix |
 | --- | --- | --- |
+| `llama-3.1-70b-versatile` returns HTTP 400 | Model deprecated by Groq | Updated to `llama-3.3-70b-versatile` in `llm_client.py` and both `01_Master_Architecture.md` copies |
+| `run_inference("")` did not raise | Empty transcript guard missing — Groq returned scores for empty input | Added `if not transcript or not transcript.strip(): raise ValueError` at top of `run_inference` |
 | `seed_data.py` crashed with `TypeError: unsupported format string passed to NoneType` | Verification print used `:<N>` format spec directly on psycopg2 `Decimal`/`None` values | Wrapped all row values in `str()` before f-string formatting |
 | DB had 401 calls instead of 200 | Previous partial seed run left duplicate agents and ~201 rows | Noted for demo-day cleanup — wipe DB and re-run seed before final demo |
 | `worker_io` had no volume mount | `../backend:/app` was missing from compose — worker ran stale built image | Added volume mount to `worker_io` in `docker-compose.yml` before Phase 2.3 started |
