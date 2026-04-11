@@ -61,7 +61,7 @@ updated: 2026-04-11
 | DB cleanup + reseed | HIGH | Duplicate agents from multiple seed runs |
 | Azure B2s deployment | HIGH | Always-on demo server |
 | Azure NC4as_T4_v3 setup | HIGH | GPU for live demo |
-| Diarized segments persisted to DB | MEDIUM | Audio sync in Call Detail requires this |
+| Diarized segments persisted to DB | MEDIUM | Audio sync in Call Detail — see [[19_Future_Transcript_Audio_Sync]] |
 | `GET /admin/gpu-status` endpoint | LOW | Nice to have for demo |
 | CORS restriction | LOW | Currently wildcard — fix before demo |
 
