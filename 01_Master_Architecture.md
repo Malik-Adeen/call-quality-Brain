@@ -44,12 +44,14 @@
 
 | Layer | Tool | Notes |
 |---|---|---|
-| Framework | React 18 + TypeScript | Vite scaffold |
+| Framework | React 18 + TypeScript | Vite 8 scaffold |
 | Routing | React Router v6 | |
 | Charts | Recharts | All dashboard visualisations |
-| Styling | TailwindCSS | Core utility classes only |
+| Styling | TailwindCSS v4 | @tailwindcss/vite plugin — no tailwind.config.js |
 | HTTP Client | Axios | JWT injected via interceptor |
 | State | Zustand | JWT stored in memory — never localStorage |
+| Icons | lucide-react | |
+| Dev proxy | Vite `/api` → `http://localhost:8000` | No CORS issues in dev |
 
 ### 2.4 Infrastructure & Observability
 
