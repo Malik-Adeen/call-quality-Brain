@@ -30,8 +30,9 @@ created: 2026-04-11
 | Phase 2.1 | GPU Worker — WhisperX + Pyannote ASR | ✅ Complete |
 | Phase 2.2 | IO Worker — Presidio PII Redaction | ✅ Complete |
 | Phase 2.3 | IO Worker — Groq LLM Inference | ✅ Complete |
-| Phase 3 | Fine-tuning — QLoRA Urdu ASR | 📋 Planned |
-| Phase 4 | Frontend — React Dashboard | 📋 Planned |
+| Phase 2.4 | IO Worker — Scoring, Chain Wiring, WebSocket | ✅ Complete |
+| Phase 3 | Frontend — React Dashboard | 📋 Planned |
+| Phase 4 | Fine-tuning — QLoRA Urdu ASR | 📋 Planned |
 
 ---
 
@@ -67,9 +68,11 @@ created: 2026-04-11
 - [[07_Phase1_Postmortem]] — Phase 1: Auth, upload pipeline, 7-service Docker stack
 - [[08_Phase2.1_Postmortem]] — Phase 2.1: WhisperX GPU worker, Pyannote diarization
 - [[09_Phase2.2_Postmortem]] — Phase 2.2: Presidio PII redaction, Celery chain
+- [[11_Phase2.3_Postmortem]] — Phase 2.3: Groq LLM inference, llama-3.3-70b-versatile, 31/31 tests
+- [[12_Phase2.4_Postmortem]] — Phase 2.4: Scoring formula, full chain wiring, WebSocket notify
 
 ---
 
 ## Active Sprints
 
-- [[11_Phase2.3_Postmortem]] — ✅ Groq LLM inference — `llama-3.1-70b-versatile`, 9-field validated result, MD5 cache
+- Phase 3: React Dashboard — 5 modules against live API
