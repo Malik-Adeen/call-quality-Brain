@@ -160,8 +160,19 @@
               "icon": "lucide-list",
               "title": "Outline"
             }
+          },
+          {
+            "id": "e0c6c31d997b174b",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
           }
-        ]
+        ],
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
@@ -176,11 +187,13 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "obsidian-git:Open Git source control": false
     }
   },
   "active": "91d0861913fcdf8c",
   "lastOpenFiles": [
+    "01_Master_Architecture.md",
     "PROJECT_ROADMAP_1.md",
     "11_Phase2.3_Groq_Inference.md",
     "08_Phase2.1_Postmortem.md",
