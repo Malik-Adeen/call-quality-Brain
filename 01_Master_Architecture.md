@@ -38,7 +38,7 @@
 | Diarization | Pyannote.audio 3.1 | Requires `HF_TOKEN` — accept model terms at hf.co first |
 | PII Redaction | Microsoft Presidio | Mandatory gate — runs before every DB write and every LLM call |
 | LLM Primary | Groq API — `llama-3.3-70b-versatile` | Free tier, zero local VRAM |
-| LLM Fallback | OpenRouter — `meta-llama/llama-3.1-70b-instruct` | $10 budget, HTTP 429 overflow only |
+| LLM Fallback | OpenRouter — `meta-llama/llama-3.3-70b-instruct` | $10 budget, HTTP 429 overflow only |
 
 ### 2.3 Frontend
 
@@ -92,7 +92,7 @@ PROVIDER_CHAIN = [
         "name":     "openrouter",
         "base_url": "https://openrouter.ai/api/v1",
         "api_key":  OPENROUTER_API_KEY,
-        "model":    "meta-llama/llama-3.1-70b-instruct",
+        "model":    "meta-llama/llama-3.3-70b-instruct",
     },
 ]
 ```
