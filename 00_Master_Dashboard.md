@@ -133,6 +133,7 @@ updated: 2026-04-11
 - [[14_Audit_Fixes]] — GPT-5 security audit: 3 critical + 3 warnings fixed
 - [[16_Phase3A_Read_Endpoints]] — GET /calls, GET /calls/{id}, GET /agents/{id}/scores
 - [[17_Phase3_Frontend]] — React dashboard: 5 modules, design system applied
+- [[20_New_Design_System]] — Google AI Studio inspired redesign: dark theme, JetBrains Mono, Playfair Display
 
 ---
 
