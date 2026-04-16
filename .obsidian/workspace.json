@@ -33,8 +33,7 @@
               "title": "22_Session_Handoff"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -206,11 +205,12 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "b39969d432295a44",
+  "active": "91d0861913fcdf8c",
   "lastOpenFiles": [
+    "11_Azure_Deployment.md",
+    "22_Session_Handoff.md",
     "21_UI_Redesign_Postmortem.md",
     "19_Future_Transcript_Audio_Sync.md",
-    "22_Session_Handoff.md",
     "20_New_Design_System.md",
     "13_Phase2_E2E_Postmortem.md",
     "18_Phase4_Plan.md",
