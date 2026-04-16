@@ -1,6 +1,6 @@
 ---
 tags: [handoff, session-starter]
-date: 2026-04-14
+date: 2026-04-16
 status: reference
 ---
 
@@ -33,7 +33,7 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 
 ## SYSTEM OVERVIEW
 
-7-service Docker stack. FastAPI API + Celery workers (gpu_queue + io_queue) + PostgreSQL 16 + Redis 7 + MinIO + Flower.
+8-service Docker stack. FastAPI API + Celery workers (gpu_queue + io_queue) + PostgreSQL 16 + Redis 7 + MinIO + MinIO Init + Flower.
 
 **7-stage AI pipeline:**
 `POST /calls/upload` → `run_whisperx (gpu_queue)` → `redact_pii` → `compute_talk_balance` → `run_groq_inference` → `write_scores` → `notify_websocket (all io_queue)`
@@ -44,7 +44,7 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 
 ---
 
-## CURRENT BUILD STATUS: v1.1
+## CURRENT BUILD STATUS: v1.2
 
 | Phase | Status |
 |---|---|
@@ -58,7 +58,8 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 | Phase 3 — React dashboard (6 pages) | ✅ |
 | UI redesign (light parchment theme) | ✅ |
 | UI bug fixes (4 bugs post-redesign) | ✅ |
-| **Phase 4 — PDF export + Azure deploy** | 🔲 NEXT |
+| Phase 4 — PDF export + reseed + MinIO volume | ✅ |
+| **Azure B2s + NC4as_T4_v3 deploy** | 🔲 NEXT |
 
 ---
 
@@ -67,20 +68,21 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 - Upload real `.wav` file → full pipeline → score displayed in dashboard via WebSocket
 - E2E verified: `test_call.wav` → `score=8.72`, `status=complete`, PII redacted
 - Dashboard: Login, Overview (StatCards + charts), Call History (table + search + filters), Call Detail (slide-in panel with RadarChart), Agents (cards + score history), Upload, Reports (WebSocket live)
+- `POST /reports/export` → Playwright PDF with metadata grid, metrics bar chart, coaching summary, redacted transcript — validated
+- `scripts/reset_and_seed.py` — one-command demo reset (TRUNCATE + bcrypt passwords + 200 calls)
+- MinIO audio persists across container restarts (`minio_data` named volume)
 - 200 seeded calls, 5 agents in DB
-- Page reload keeps you logged in (sessionStorage persist)
 
 ---
 
-## PHASE 4 — WHAT NEEDS TO BE BUILT NEXT
+## WHAT NEEDS TO BE DONE NEXT
 
 In priority order:
 
-1. **DB cleanup + reseed** — `TRUNCATE` all tables, run `update_passwords.py`, reseed 200 clean rows
-2. **PDF export** — Playwright headless Chromium in API container, `POST /reports/export` → returns PDF blob
-3. **MinIO named volume** — add to `docker-compose.yml` so audio survives container restarts
-4. **Azure B2s deployment** — Ubuntu 22.04, Docker Compose, always-on demo server (~$0.05/hr)
-5. **Azure NC4as_T4_v3 GPU** — NVIDIA T4, start 20min before demo, stop immediately after
+1. **Azure B2s deployment** — Ubuntu 22.04, Docker Compose, always-on demo server (~$0.05/hr). Runbook: `11_Azure_Deployment.md`
+2. **Azure NC4as_T4_v3 GPU** — NVIDIA T4, start 20min before demo, stop immediately after. Runbook: `11_Azure_Deployment.md`
+3. **CORS fix** — replace wildcard `allow_origins=["*"]` with actual frontend origin before demo
+4. **Final demo dry-run** — full script: KPI Overview → Call List → Call Detail → Agent View → Live Upload
 
 ---
 
@@ -111,10 +113,10 @@ In priority order:
 
 ## TECH STACK (FROZEN — NO DEVIATIONS)
 
-**Backend:** FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x async + Pydantic 2.x + python-jose + bcrypt
+**Backend:** FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x async + Pydantic 2.x + python-jose + bcrypt + Playwright
 **AI:** WhisperX (faster-whisper-turbo large-v2) + Pyannote.audio 3.1 + Presidio + Groq API
 **Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + Axios + motion/react
-**Infra:** Docker Compose (7 services) + Flower 2.0 + Playwright (PDF export)
+**Infra:** Docker Compose (8 services) + Flower 2.0
 
 ---
 
@@ -143,16 +145,14 @@ Light parchment theme. Source of truth: `N:\projects\Google-Inspo\src\App.tsx`
 
 ## KNOWN ISSUES (DEFERRED)
 
-- CORS wildcard — fix before demo day
-- Duplicate agents from multiple seed runs — fix with TRUNCATE before demo
+- CORS wildcard — fix before demo day (`main.py` allow_origins)
 - Audio playback removed — CORS + ephemeral MinIO; see `19_Future_Transcript_Audio_Sync.md`
-- `reports.py` PDF export is a stub — Phase 4 task
 
 ---
 
 ## TOOLING WORKFLOW
 
-- **Claude** — architecture decisions, code generation, vault updates
+- **Claude** — architecture decisions, code generation, vault updates (writes to vault only after test validation)
 - **Antigravity IDE** — file writing, container execution, verification
 - **Gemini** — supplementary debugging
 
@@ -167,6 +167,7 @@ Key files to read at session start:
 - `01_Master_Architecture.md` — stack manifest (LLM anchor doc)
 - `03_API_Contract.md` — all API shapes and TypeScript interfaces (LLM anchor doc)
 - `21_UI_Redesign_Postmortem.md` — full design system history and bug log
+- `23_Phase4_Postmortem.md` — Phase 4 bugs and decisions
 
 ---
 
@@ -174,9 +175,14 @@ Key files to read at session start:
 
 ```powershell
 docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml up -d
-docker exec cq_minio mc alias set local http://localhost:9000 minioadmin minioadmin_dev
-docker exec cq_minio mc anonymous set download local/audio-uploads
 cd N:\projects\call-quality-analytics\frontend && npm run dev
 $r = Invoke-RestMethod -Uri "http://localhost:8000/auth/login" -Method POST -ContentType "application/json" -Body '{"email":"admin@callquality.demo","password":"admin1234"}'
 $token = $r.data.access_token
+```
+
+## RESET DB (demo prep or after corrupted state)
+
+```powershell
+cd N:\projects\call-quality-analytics
+python scripts/reset_and_seed.py
 ```
