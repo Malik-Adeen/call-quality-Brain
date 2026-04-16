@@ -44,7 +44,7 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 
 ---
 
-## CURRENT BUILD STATUS: v1.2
+## CURRENT BUILD STATUS: v1.2 — DEMO READY (LOCAL)
 
 | Phase | Status |
 |---|---|
@@ -58,31 +58,30 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 | Phase 3 — React dashboard (6 pages) | ✅ |
 | UI redesign (light parchment theme) | ✅ |
 | UI bug fixes (4 bugs post-redesign) | ✅ |
-| Phase 4 — PDF export + reseed + MinIO volume | ✅ |
+| Phase 4 — PDF export + reseed + MinIO volume + CORS | ✅ |
 | **Azure B2s + NC4as_T4_v3 deploy** | 🔲 NEXT |
 
 ---
 
 ## WHAT WORKS RIGHT NOW
 
-- Upload real `.wav` file → full pipeline → score displayed in dashboard via WebSocket
-- E2E verified: `test_call.wav` → `score=8.72`, `status=complete`, PII redacted
+- Upload real `.wav`/`.mp3` → full pipeline → score displayed in dashboard via WebSocket
+- E2E verified twice: `test_call.wav` → `score=8.72` · `test_call.mp3` → `score=92%`
 - Dashboard: Login, Overview (StatCards + charts), Call History (table + search + filters), Call Detail (slide-in panel with RadarChart), Agents (cards + score history), Upload, Reports (WebSocket live)
-- `POST /reports/export` → Playwright PDF with metadata grid, metrics bar chart, coaching summary, redacted transcript — validated
+- `POST /reports/export` → validated Playwright PDF with metadata, metrics bar chart, coaching summary
 - `scripts/reset_and_seed.py` — one-command demo reset (TRUNCATE + bcrypt passwords + 200 calls)
 - MinIO audio persists across container restarts (`minio_data` named volume)
+- CORS locked to `http://localhost:5173`
 - 200 seeded calls, 5 agents in DB
 
 ---
 
 ## WHAT NEEDS TO BE DONE NEXT
 
-In priority order:
-
-1. **Azure B2s deployment** — Ubuntu 22.04, Docker Compose, always-on demo server (~$0.05/hr). Runbook: `11_Azure_Deployment.md`
-2. **Azure NC4as_T4_v3 GPU** — NVIDIA T4, start 20min before demo, stop immediately after. Runbook: `11_Azure_Deployment.md`
-3. **CORS fix** — replace wildcard `allow_origins=["*"]` with actual frontend origin before demo
-4. **Final demo dry-run** — full script: KPI Overview → Call List → Call Detail → Agent View → Live Upload
+1. **Azure B2s deployment** — always-on demo server. Runbook: `11_Azure_Deployment.md`
+2. **Azure NC4as_T4_v3 GPU** — start 20min before demo, stop immediately after. Runbook: `11_Azure_Deployment.md`
+3. **CORS update for Azure** — change `allow_origins` in `main.py` to Azure B2s public IP before demo
+4. **Final demo dry-run** — script order: KPI Overview → Call List → Call Detail → Agent View → Live Upload → PDF export
 
 ---
 
@@ -145,14 +144,14 @@ Light parchment theme. Source of truth: `N:\projects\Google-Inspo\src\App.tsx`
 
 ## KNOWN ISSUES (DEFERRED)
 
-- CORS wildcard — fix before demo day (`main.py` allow_origins)
+- CORS origin must be updated to Azure B2s public IP before demo day
 - Audio playback removed — CORS + ephemeral MinIO; see `19_Future_Transcript_Audio_Sync.md`
 
 ---
 
 ## TOOLING WORKFLOW
 
-- **Claude** — architecture decisions, code generation, vault updates (writes to vault only after test validation)
+- **Claude** — architecture decisions, code generation, vault updates (writes vault only after test validation)
 - **Antigravity IDE** — file writing, container execution, verification
 - **Gemini** — supplementary debugging
 
