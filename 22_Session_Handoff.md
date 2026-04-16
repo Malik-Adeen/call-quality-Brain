@@ -26,25 +26,25 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 - CUDA: 12.1.0
 - Project: `N:\projects\call-quality-analytics`
 - Vault: `N:\projects\docs`
-- Reference UI: `N:\projects\Google-Inspo` (Google AI Studio exported app — design source of truth)
 - Repo: github.com/Malik-Adeen/call-quality-analytics
 
 ---
 
 ## SYSTEM OVERVIEW
 
-8-service Docker stack. FastAPI API + Celery workers (gpu_queue + io_queue) + PostgreSQL 16 + Redis 7 + MinIO + MinIO Init + Flower.
+**Cloud (Azure B2s — always-on):** FastAPI API + PostgreSQL + Redis + MinIO + worker_io + Flower
+**Local (RTX 3060 Ti — demo day):** worker_gpu via SSH tunnel to Azure
 
 **7-stage AI pipeline:**
 `POST /calls/upload` → `run_whisperx (gpu_queue)` → `redact_pii` → `compute_talk_balance` → `run_groq_inference` → `write_scores` → `notify_websocket (all io_queue)`
 
-**AI stack:** WhisperX large-v2 (RTX 3060 Ti) → Presidio PII redaction → Groq `llama-3.3-70b-versatile` primary / OpenRouter `meta-llama/llama-3.3-70b-instruct` fallback
+**AI stack:** WhisperX large-v2 (RTX 3060 Ti) → Presidio PII redaction → Groq `llama-3.3-70b-versatile` primary / OpenRouter fallback
 
-**Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand (sessionStorage persist) + motion/react
+**Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand (sessionStorage) + motion/react
 
 ---
 
-## CURRENT BUILD STATUS: v1.2 — DEMO READY (LOCAL)
+## CURRENT BUILD STATUS: v1.3 — HYBRID CLOUD DEPLOYED
 
 | Phase | Status |
 |---|---|
@@ -53,35 +53,79 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 | Phase 2.2 — Presidio PII redaction | ✅ |
 | Phase 2.3 — Groq inference | ✅ |
 | Phase 2.4 — Scoring, chain, WebSocket | ✅ |
-| Audit fixes (3 critical + 3 warnings) | ✅ |
+| Audit fixes | ✅ |
 | Phase 3A — Read endpoints | ✅ |
 | Phase 3 — React dashboard (6 pages) | ✅ |
 | UI redesign (light parchment theme) | ✅ |
-| UI bug fixes (4 bugs post-redesign) | ✅ |
+| UI bug fixes | ✅ |
 | Phase 4 — PDF export + reseed + MinIO volume + CORS | ✅ |
-| **Azure B2s + NC4as_T4_v3 deploy** | 🔲 NEXT |
+| Hybrid architecture — SSH tunnel + Azure B2s | ✅ |
+| **Demo dry-run** | 🔲 NEXT |
 
 ---
 
 ## WHAT WORKS RIGHT NOW
 
-- Upload real `.wav`/`.mp3` → full pipeline → score displayed in dashboard via WebSocket
-- E2E verified twice: `test_call.wav` → `score=8.72` · `test_call.mp3` → `score=92%`
-- Dashboard: Login, Overview (StatCards + charts), Call History (table + search + filters), Call Detail (slide-in panel with RadarChart), Agents (cards + score history), Upload, Reports (WebSocket live)
-- `POST /reports/export` → validated Playwright PDF with metadata, metrics bar chart, coaching summary
-- `scripts/reset_and_seed.py` — one-command demo reset (TRUNCATE + bcrypt passwords + 200 calls)
-- MinIO audio persists across container restarts (`minio_data` named volume)
-- CORS locked to `http://localhost:5173`
-- 200 seeded calls, 5 agents in DB
+- Azure B2s live at `http://20.228.184.111:8000/health` ✅
+- 200 seeded calls on Azure ✅
+- Full hybrid E2E verified: local upload → Azure API → SSH tunnel → RTX 3060 Ti → Azure DB → dashboard ✅
+- `James O'Brien · Sales · 92%` confirmed in Azure Call List ✅
+- PDF export working (Playwright on Azure) ✅
+- WebSocket proxied through Vite — no hardcoded IPs ✅
+- SSH key auth set up — tunnel reconnects without password ✅
+
+---
+
+## HOW TO START FOR DEMO
+
+**Step 1 — Start SSH tunnel (keep this terminal open):**
+```powershell
+N:\projects\call-quality-analytics\scripts\tunnel.bat
+```
+
+**Step 2 — Start local GPU worker (new terminal):**
+```powershell
+docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.hybrid.yml up -d worker_gpu
+```
+
+**Step 3 — Start frontend:**
+```powershell
+cd N:\projects\call-quality-analytics\frontend && npm run dev
+```
+
+**Step 4 — Open dashboard:**
+```
+http://localhost:5173
+```
+Login: `admin@callquality.demo` / `admin1234`
+
+---
+
+## AZURE INFRASTRUCTURE
+
+| Resource | IP | Status |
+|---|---|---|
+| B2s East US (always-on) | `20.228.184.111` | ✅ Running |
+| NC4as_T4_v3 (GPU) | TBD | ⏳ Quota pending |
+
+**SSH into Azure:**
+```powershell
+ssh -i C:\Users\adeen\.ssh\callquality_azure azureuser@20.228.184.111
+```
+
+**Reset DB on Azure:**
+```bash
+cd ~/call-quality-analytics && python3 scripts/reset_and_seed.py
+```
 
 ---
 
 ## WHAT NEEDS TO BE DONE NEXT
 
-1. **Azure B2s deployment** — always-on demo server. Runbook: `11_Azure_Deployment.md`
-2. **Azure NC4as_T4_v3 GPU** — start 20min before demo, stop immediately after. Runbook: `11_Azure_Deployment.md`
-3. **CORS update for Azure** — change `allow_origins` in `main.py` to Azure B2s public IP before demo
-4. **Final demo dry-run** — script order: KPI Overview → Call List → Call Detail → Agent View → Live Upload → PDF export
+1. **Demo dry-run** — full script: KPI Overview → Call List → Call Detail → Agents → Live Upload → PDF export
+2. **WebSocket toast verification** — upload a call, confirm toast fires on Reports page
+3. **Git pull on Azure** — `ssh azureuser@20.228.184.111 "cd ~/call-quality-analytics && git pull && docker restart cq_api cq_worker_io"`
+4. **GPU quota check** — portal.azure.com → Quotas → check if NC4as_T4_v3 East US approved
 
 ---
 
@@ -96,7 +140,7 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 7. Groq model: `llama-3.3-70b-versatile` (never 3.1)
 8. MinIO endpoint: `cq-minio:9000` (hyphens, not underscores)
 9. `DATABASE_URL`: `postgresql+asyncpg://` for API, `postgresql://` for workers
-10. Score display: backend 0–10 × 10 = percentage shown in UI (e.g. 7.85 → 78.5%)
+10. Score display: backend 0–10 × 10 = percentage shown in UI
 11. Zero code comments — ever
 
 ---
@@ -110,24 +154,22 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 
 ---
 
-## TECH STACK (FROZEN — NO DEVIATIONS)
+## TECH STACK (FROZEN)
 
 **Backend:** FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x async + Pydantic 2.x + python-jose + bcrypt + Playwright
-**AI:** WhisperX (faster-whisper-turbo large-v2) + Pyannote.audio 3.1 + Presidio + Groq API
+**AI:** WhisperX large-v2 + Pyannote.audio 3.1 + Presidio + Groq API
 **Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + Axios + motion/react
-**Infra:** Docker Compose (8 services) + Flower 2.0
+**Infra:** Docker Compose + Flower 2.0 + SSH tunnel (hybrid mode)
 
 ---
 
 ## FRONTEND DESIGN SYSTEM
 
-Light parchment theme. Source of truth: `N:\projects\Google-Inspo\src\App.tsx`
-
 | Token | Value |
 |---|---|
 | Background | `#E4E3E0` warm parchment |
 | Cards | `bg-white border border-[#141414]` sharp edges, no radius |
-| Active nav | `bg-[#141414] text-[#E4E3E0]` full-width button |
+| Active nav | `bg-[#141414] text-[#E4E3E0]` |
 | Body font | Inter |
 | Data/numbers | JetBrains Mono (`font-mono`) |
 | Headers/names | Playfair Display italic (`font-serif`) |
@@ -135,23 +177,11 @@ Light parchment theme. Source of truth: `N:\projects\Google-Inspo\src\App.tsx`
 | Score mid 60-80% | `#141414` black |
 | Score low <60% | `#ef4444` red |
 
-**Key components:**
-- `CallDetailPanel.tsx` — shared slide-in panel (motion/react spring), used by Overview and CallList
-- `Sidebar.tsx` — w-64, NEW ANALYSIS button pinned to bottom
-- `App.tsx` — sticky header with page title (serif italic) + user avatar
-
----
-
-## KNOWN ISSUES (DEFERRED)
-
-- CORS origin must be updated to Azure B2s public IP before demo day
-- Audio playback removed — CORS + ephemeral MinIO; see `19_Future_Transcript_Audio_Sync.md`
-
 ---
 
 ## TOOLING WORKFLOW
 
-- **Claude** — architecture decisions, code generation, vault updates (writes vault only after test validation)
+- **Claude** — architecture decisions, code generation, vault updates (writes vault only after validation)
 - **Antigravity IDE** — file writing, container execution, verification
 - **Gemini** — supplementary debugging
 
@@ -161,27 +191,10 @@ Light parchment theme. Source of truth: `N:\projects\Google-Inspo\src\App.tsx`
 
 Location: `N:\projects\docs`
 
-Key files to read at session start:
+Key files:
 - `00_Master_Dashboard.md` — current state, invariants, component map
 - `01_Master_Architecture.md` — stack manifest (LLM anchor doc)
-- `03_API_Contract.md` — all API shapes and TypeScript interfaces (LLM anchor doc)
-- `21_UI_Redesign_Postmortem.md` — full design system history and bug log
-- `23_Phase4_Postmortem.md` — Phase 4 bugs and decisions
-
----
-
-## HOW TO START DOCKER AFTER RESTART
-
-```powershell
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml up -d
-cd N:\projects\call-quality-analytics\frontend && npm run dev
-$r = Invoke-RestMethod -Uri "http://localhost:8000/auth/login" -Method POST -ContentType "application/json" -Body '{"email":"admin@callquality.demo","password":"admin1234"}'
-$token = $r.data.access_token
-```
-
-## RESET DB (demo prep or after corrupted state)
-
-```powershell
-cd N:\projects\call-quality-analytics
-python scripts/reset_and_seed.py
-```
+- `03_API_Contract.md` — all API shapes and TypeScript interfaces
+- `11_Azure_Deployment.md` — B2s + T4 runbooks
+- `23_Phase4_Postmortem.md` — Phase 4 decisions
+- `24_Hybrid_Architecture_Postmortem.md` — SSH tunnel + WAN Celery tuning
