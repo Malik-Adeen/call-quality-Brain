@@ -7,6 +7,7 @@ status: reference
 # 22 — New Chat Session Handoff
 
 > Paste this entire document at the start of a new Claude session.
+> It contains everything needed to continue without re-explaining anything.
 
 ---
 
@@ -14,7 +15,7 @@ status: reference
 
 **Adeen** — 6th semester BSCS student, Bahria University Islamabad, Pakistan.
 Building an AI Call Quality & Agent Performance Analytics System for university final presentation demo.
-**Demo date: Tuesday/Wednesday/Thursday next week (week of April 21, 2026)**
+**Demo date: Tuesday/Wednesday/Thursday — week of April 21, 2026**
 
 ---
 
@@ -34,137 +35,166 @@ Building an AI Call Quality & Agent Performance Analytics System for university 
 ## SYSTEM OVERVIEW
 
 **Cloud (Azure B2s — always-on):** FastAPI + PostgreSQL + Redis + MinIO + worker_io + Flower
-**Local (RTX 3060 Ti — demo day):** worker_gpu via SSH tunnel to Azure
+**Local (RTX 3060 Ti — demo day only):** worker_gpu via SSH tunnel to Azure
 
 **7-stage AI pipeline:**
 `POST /calls/upload` → `run_whisperx (gpu_queue)` → `redact_pii` → `compute_talk_balance` → `run_groq_inference` → `write_scores` → `notify_websocket`
 
-**AI stack:** WhisperX large-v2 → Presidio PII redaction → Groq `llama-3.3-70b-versatile` / OpenRouter fallback
+**AI stack:** WhisperX large-v2 → Presidio PII redaction (extended) → Groq `llama-3.3-70b-versatile` / OpenRouter fallback
 
 **Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + motion/react
 
 ---
 
-## CURRENT BUILD STATUS: v1.3 — DEMO READY
+## CURRENT BUILD STATUS: v1.4 — DEMO READY
 
 | Phase | Status |
 |---|---|
 | Phase 1 — Auth, Upload, Docker, Celery | ✅ |
-| Phase 2.1 — WhisperX GPU | ✅ |
-| Phase 2.2 — Presidio PII redaction | ✅ |
-| Phase 2.3 — Groq inference | ✅ |
-| Phase 2.4 — Scoring, chain, WebSocket | ✅ |
-| Phase 3 — React dashboard (6 pages) | ✅ |
-| Phase 4 — PDF export + reseed + CORS | ✅ |
-| Hybrid architecture — SSH tunnel + Azure B2s | ✅ |
-| Real audio testing (3 files verified) | ✅ |
+| Phase 2 — Full AI Pipeline | ✅ |
+| Phase 3 — React Dashboard (6 pages) | ✅ |
+| Phase 4 — PDF export + Azure + Hybrid architecture | ✅ |
+| Real audio testing (5 files verified) | ✅ |
+| Presidio extended (zip, SSN last-4, account numbers) | ✅ |
 | **Demo dry-run** | 🔲 NEXT |
 
 ---
 
 ## WHAT WORKS RIGHT NOW
 
-- Azure B2s: `http://20.228.184.111:8000/health` ✅
+- Azure B2s live: `http://20.228.184.111:8000/health` ✅
 - 200 seeded calls on Azure DB ✅
-- Full hybrid E2E verified on real audio: billing_dispute (88.3%), irate_customer (71.0%), bpo_inbound_1 (75.1%) ✅
-- PDF export working on real calls ✅
-- WebSocket toast verified ✅
+- Full hybrid E2E verified on real audio ✅
+- Best demo file: `tech_support.mp3` → 88.2%, 3m 24s, clean diarization ✅
+- PDF export working ✅
+- WebSocket toast working ✅
+- Extended Presidio: zip codes, SSN last-4, account numbers now redacted ✅
 - SSH key auth — tunnel reconnects without password ✅
+
+---
+
+## REAL AUDIO TEST RESULTS
+
+| File | Score | Duration | Use for demo? |
+|---|---|---|---|
+| tech_support.mp3 | 88.2% | 3m 24s | ✅ YES — best file |
+| billing_dispute.mp3 | 88.3% | 1m 27s | ✅ Good backup |
+| irate_customer.mp3 | 71.0% | 12m 17s | ⚠️ Needs trim |
+| bpo_inbound_1.mp3 | 75.1% | 2m 18s | ℹ️ Labels swapped |
+| bpo_inbound_2.mp3 | 75.1% | 2m 18s | ❌ Duplicate of bpo_inbound_1 |
 
 ---
 
 ## HOW TO START FOR DEMO
 
-**Step 1 — Start SSH tunnel (keep terminal open):**
+```
+CRITICAL: Never run full local stack + tunnel simultaneously.
+Port 6379 conflict kills the hybrid architecture silently.
+```
+
+**Step 1 — Check VRAM is clear:**
+```powershell
+nvidia-smi --query-gpu=memory.used,memory.free --format=csv
+# Must show memory.free > 5000 MiB
+```
+
+**Step 2 — Start SSH tunnel (keep this terminal open):**
 ```powershell
 N:\projects\call-quality-analytics\scripts\tunnel.bat
 ```
 
-**Step 2 — Start local GPU worker (new terminal):**
+**Step 3 — Start local GPU worker only:**
 ```powershell
 docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.hybrid.yml up -d worker_gpu
 ```
 
-**Step 3 — Verify worker connected to Azure:**
+**Step 4 — Verify synced with Azure:**
 ```powershell
 docker logs cq_worker_gpu --tail 5
 # Must show: sync with worker_io@xxxxxxxxx
 ```
 
-**Step 4 — Start frontend:**
+**Step 5 — Start frontend:**
 ```powershell
 cd N:\projects\call-quality-analytics\frontend && npm run dev
 ```
 
-**Step 5 — Open dashboard:**
+**Step 6 — Open dashboard:**
 ```
 http://localhost:5173
+Login: admin@callquality.demo / admin1234
 ```
-Login: `admin@callquality.demo` / `admin1234`
 
 ---
 
 ## DEMO DAY PROTOCOL
 
 1. Close Chrome, Discord, all non-essential apps
-2. `nvidia-smi` — confirm VRAM < 3GB before starting
-3. Start `tunnel.bat` — verify silent connection
-4. Start `worker_gpu` → verify `sync with worker_io` in logs
+2. `nvidia-smi` — confirm VRAM < 3GB
+3. Start `tunnel.bat`
+4. Start `worker_gpu` → confirm `sync with worker_io` in logs
 5. Start frontend
-6. Upload ONE audio file only
-7. Switch to Reports page — watch Live indicator + wait for toast
-8. After toast → Call List → show score → open detail → PDF export
-9. Show Agent View, Overview charts
-10. Have `nvidia-smi` visible in background — shows GPU utilization live
+6. Demo script: Overview → Call History → Call Detail → Agent View → Upload
+7. Upload `tech_support.mp3` — switch to Reports page — wait for toast
+8. After toast → Call List → open detail → PDF export
+9. Keep `nvidia-smi` visible in background
 
-**CRITICAL: Upload one file at a time. Wait for toast before next upload.**
-**If VRAM hits 7.5GB+ in nvidia-smi — wait before uploading.**
+**CRITICAL: One file at a time. Wait for toast before next upload.**
+**If VRAM > 7GB — restart worker_gpu before uploading.**
 
 ---
 
-## WHAT STILL NEEDS DOING BEFORE DEMO
+## IF SYSTEM CRASHES
+
+```bash
+# Fix stuck processing calls on Azure
+ssh -i C:\Users\adeen\.ssh\callquality_azure azureuser@20.228.184.111
+docker exec cq_postgres psql -U callquality -d callquality -c "UPDATE calls SET status='failed' WHERE status='processing';"
+docker exec cq_redis redis-cli DEL gpu_queue
+
+# Restart local services after crash
+docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml up -d api worker_io flower
+```
+
+---
+
+## WHAT STILL NEEDS DOING
 
 | Item | Priority |
 |---|---|
 | Full demo dry-run (solo rehearsal) | HIGH |
-| `git pull` on Azure VM + restart services | HIGH |
+| `git pull` on Azure VM + `docker restart cq_worker_io` | HIGH |
 | `reset_and_seed.py` on Azure VM — clean 200 calls | HIGH |
-| Prepare 2-3 trimmed audio files (2-3 min, clean) | MEDIUM |
-| Trim `irate_customer.mp3` — remove YouTube tutorial | MEDIUM |
+| Verify Presidio fix: re-upload bpo_inbound_1 — confirm `<ZIP_CODE>` and `<SSN>` appear | MEDIUM |
+| Trim `irate_customer.mp3` if using it live | LOW |
 
 ---
 
 ## AZURE INFRASTRUCTURE
 
-| Resource | IP | Status |
-|---|---|---|
-| B2s East US (always-on) | `20.228.184.111` | ✅ Running |
-| NC4as_T4_v3 | N/A | ❌ Quota disabled on Student account |
+| Resource | IP | Cost | Status |
+|---|---|---|---|
+| B2s East US (always-on) | `20.228.184.111` | ~$0.042/hr | ✅ Running |
+| NC4as_T4_v3 GPU | N/A | — | ❌ Quota disabled on Student account |
 
 **SSH into Azure:**
 ```powershell
 ssh -i C:\Users\adeen\.ssh\callquality_azure azureuser@20.228.184.111
 ```
 
+**Update Azure and restart IO worker:**
+```bash
+cd ~/call-quality-analytics && git pull && docker restart cq_worker_io
+```
+
 **Reseed Azure DB:**
 ```bash
-cd ~/call-quality-analytics && git pull && python3 scripts/reset_and_seed.py
+python3 scripts/reset_and_seed.py
 ```
 
 ---
 
-## KNOWN ISSUES FOR DEMO
-
-| Issue | Mitigation |
-|---|---|
-| PC crash if uploading multiple files rapidly | Upload one at a time, wait for toast |
-| Local Redis blocks SSH tunnel port 6379 | Always stop local stack before starting tunnel.bat |
-| Call List doesn't auto-update after processing | Navigate away and back — page remounts and fetches fresh |
-| AGENT/CUSTOMER labels swapped on calls with pre-call announcement | Expected — Pyannote assigns AGENT to first speaker |
-
----
-
-## CRITICAL INVARIANTS
+## CRITICAL INVARIANTS — NEVER VIOLATE
 
 1. Audio binary → MinIO only (`minio_audio_path`), never DB
 2. Raw transcript → never DB — Presidio-redacted only
@@ -181,9 +211,21 @@ cd ~/call-quality-analytics && git pull && python3 scripts/reset_and_seed.py
 ## TECH STACK (FROZEN)
 
 **Backend:** FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
-**AI:** WhisperX large-v2 + Pyannote.audio 3.1 + Presidio + Groq API
+**AI:** WhisperX large-v2 + Pyannote.audio 3.1 + Presidio (extended) + Groq API
 **Frontend:** React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + motion/react
-**Infra:** Docker Compose + Flower 2.0 + SSH tunnel
+**Infra:** Docker Compose + Flower 2.0 + SSH tunnel (hybrid mode)
+
+---
+
+## KNOWN ISSUES
+
+| Issue | Mitigation |
+|---|---|
+| PC crashes if multiple files uploaded rapidly | One at a time, wait for toast, check VRAM first |
+| Local Redis blocks SSH tunnel port 6379 | Stop full local stack before starting tunnel.bat |
+| Call List doesn't auto-update after processing | Navigate away and back to remount |
+| AGENT/CUSTOMER labels swapped on pre-call announcement audio | Expected — Pyannote assigns AGENT to first speaker |
+| `processing` calls cause crash loop on worker_gpu restart | Run psql UPDATE + redis DEL before restarting |
 
 ---
 
@@ -191,8 +233,18 @@ cd ~/call-quality-analytics && git pull && python3 scripts/reset_and_seed.py
 
 Location: `N:\projects\docs`
 
-Key files:
-- `00_Master_Dashboard.md` — current state
-- `22_Session_Handoff.md` — this file
-- `24_Hybrid_Architecture_Postmortem.md` — SSH tunnel decisions
-- `26_Audio_Testing_Postmortem.md` — real audio test results and crash recovery
+| File | Content |
+|---|---|
+| `00_Master_Dashboard.md` | Current state, checklist, start sequence |
+| `01_Master_Architecture.md` | Stack manifest, invariants, scoring formula |
+| `03_API_Contract.md` | All API shapes, TypeScript interfaces |
+| `11_Azure_Deployment.md` | B2s runbook, budget tracker |
+| `24_Hybrid_Architecture_Postmortem.md` | SSH tunnel decisions, WAN Celery tuning |
+| `26_Audio_Testing_Postmortem.md` | Real audio test results, crash recovery |
+| `27_Presidio_Extension_Postmortem.md` | Custom PII recognizers added |
+
+---
+
+## POST-MORTEMS (chronological)
+
+07 → 08 → 09 → 11 → 12 → 13 → 14 → 16 → 17 → 21 → 23 → 24 → 26 → 27
