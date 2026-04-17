@@ -8,113 +8,13 @@
         "type": "tabs",
         "children": [
           {
-            "id": "91d0861913fcdf8c",
-            "type": "leaf",
-            "pinned": true,
-            "state": {
-              "type": "graph",
-              "state": {},
-              "pinned": true,
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
-            }
-          },
-          {
             "id": "b39969d432295a44",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "22_Session_Handoff.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "22_Session_Handoff"
-            }
-          },
-          {
-            "id": "05b984178a6b65c5",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "22_Session_Handoff.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "22_Session_Handoff"
-            }
-          },
-          {
-            "id": "8513a7e92dab1c70",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "00_Master_Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "00_Master_Dashboard"
-            }
-          },
-          {
-            "id": "3892b160b0179a98",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "CONTEXT.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "CONTEXT"
-            }
-          },
-          {
-            "id": "b19a86cb6ba56836",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "00_Master_Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "00_Master_Dashboard"
-            }
-          },
-          {
-            "id": "d938b48631c100bc",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "00_Master_Dashboard.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "00_Master_Dashboard"
-            }
-          },
-          {
-            "id": "8d5ddde91c134ae1",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "22_Session_Handoff.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "22_Session_Handoff"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -170,11 +70,13 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "right": {
     "id": "46c7c9c930ff9cd1",
@@ -288,10 +190,13 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "91d0861913fcdf8c",
+  "active": "b39969d432295a44",
   "lastOpenFiles": [
+    "STARTUP_LOCAL.md",
+    "STARTUP_HYBRID.md",
     "22_Session_Handoff.md",
     "00_Master_Dashboard.md",
+    "Untitled.md",
     "CONTEXT.md",
     "ROADMAP.md",
     "23_Phase4_Postmortem.md",

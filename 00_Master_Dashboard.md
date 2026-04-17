@@ -51,9 +51,18 @@ updated: 2026-04-17
 
 ---
 
-## Immediate Pre-Demo Checklist
+## Startup Runbooks
 
-- [ ] Full demo dry-run
+| Mode | When to use | Runbook |
+|---|---|---|
+| **Hybrid** | Azure B2s running, local GPU for inference | [[STARTUP_HYBRID]] |
+| **Local** | Offline / all services on local machine | [[STARTUP_LOCAL]] |
+
+---
+
+## Pre-Demo Checklist
+
+- [ ] Full demo dry-run — see [[STARTUP_HYBRID]]
 - [ ] `git pull` + `docker restart cq_worker_io` on Azure VM
 - [ ] `reset_and_seed.py` on Azure VM
 - [ ] Verify `http://20.228.184.111:8000/health` responds
@@ -61,46 +70,9 @@ updated: 2026-04-17
 
 ---
 
-## Demo Start Sequence
-
-```
-1. nvidia-smi → memory.free > 5000 MiB
-2. scripts/tunnel.bat → SSH connects silently
-3. docker compose -f infra/docker-compose.hybrid.yml up -d worker_gpu
-4. docker logs cq_worker_gpu --tail 5 → "sync with worker_io"
-5. cd frontend && npm run dev
-6. http://localhost:5173 → admin@callquality.demo / admin1234
-7. Upload tech_support.mp3 → Reports page → wait for toast
-```
-
-**Never run local cq_redis + tunnel.bat simultaneously. Port 6379 conflict.**
-
----
-
-## Real Audio Test Results
-
-| File | Score | Duration | Demo use |
-|---|---|---|---|
-| tech_support.mp3 | 88.2% | 3m 24s | Primary demo file |
-| billing_dispute.mp3 | 88.3% | 1m 27s | Backup |
-| irate_customer.mp3 | 71.0% | 12m 17s | Needs trim |
-| bpo_inbound_1.mp3 | 75.1% | 2m 18s | Labels swapped |
-
-Full analysis: [[26_Audio_Testing_Postmortem]]
-
----
-
 ## FYP Future Phases
 
-See [[ROADMAP]] for full detail and [[06_Urdu_ASR_Research]] for Phase 5 research.
-
-| Phase | Description |
-|---|---|
-| 5 | Urdu/English code-switched ASR via QLoRA — [[06_Urdu_ASR_Research]] |
-| 6 | Real-time streaming transcription |
-| 7 | Advanced analytics + automated coaching reports |
-| 8 | Multi-tenancy |
-| 9 | Mobile supervisor app |
+See [[ROADMAP]] · Phase 5 research: [[06_Urdu_ASR_Research]]
 
 ---
 
@@ -112,7 +84,7 @@ Browser → Vite proxy → Azure B2s (FastAPI + PG + Redis + MinIO + worker_io)
                        Local RTX 3060 Ti (worker_gpu · WhisperX large-v2)
 ```
 
-See [[01_Master_Architecture]] for full spec · [[11_Azure_Deployment]] for runbooks · [[10_GPU_Infrastructure]] for GPU details.
+Full spec: [[01_Master_Architecture]] · Azure runbooks: [[11_Azure_Deployment]] · GPU: [[10_GPU_Infrastructure]]
 
 ---
 
@@ -128,6 +100,15 @@ See [[01_Master_Architecture]] for full spec · [[11_Azure_Deployment]] for runb
 8. Score: stored 0–10, displayed as % (×10)
 9. Zero code comments
 
+Full rules: [[INVARIANTS]]
+
+---
+
+## LLM Workflow
+
+See [[PROMPTING_GUIDE]] for model routing, prompt templates, and token efficiency.
+See [[INVARIANTS]] for the 500-token rules block to paste into Qwen/Gemini.
+
 ---
 
 ## Vault Index
@@ -135,19 +116,19 @@ See [[01_Master_Architecture]] for full spec · [[11_Azure_Deployment]] for runb
 | File | Purpose |
 |---|---|
 | [[CONTEXT]] | Universal LLM context — paste into any chat |
+| [[INVARIANTS]] | 500-token rules block for Qwen/Gemini sessions |
+| [[PROMPTING_GUIDE]] | Model routing, templates, token efficiency |
 | [[ROADMAP]] | FYP phases beyond the demo |
+| [[STARTUP_HYBRID]] | Azure B2s + local GPU startup runbook |
+| [[STARTUP_LOCAL]] | All-local Docker startup runbook |
+| [[LOG]] | Daily one-line session notes |
 | [[01_Master_Architecture]] | Stack manifest, pipeline, scoring formula |
 | [[02_Database_Schema]] | PostgreSQL schema |
 | [[03_API_Contract]] | All endpoint shapes + TypeScript interfaces |
-| [[04_Demo_Execution_Plan]] | Original demo checklist |
-| [[06_Urdu_ASR_Research]] | Research for Phase 5 Urdu ASR |
 | [[10_GPU_Infrastructure]] | CUDA, Docker, cache paths |
-| [[11_Azure_Deployment]] | B2s runbook, SSH tunnel, budget |
-| [[15_Design_System]] | Original design tokens |
-| [[20_New_Design_System]] | Light parchment design system |
+| [[11_Azure_Deployment]] | B2s + SSH tunnel runbook |
+| [[20_New_Design_System]] | Light parchment design tokens |
 | [[19_Future_Transcript_Audio_Sync]] | Deferred audio sync feature |
-| [[22_Session_Handoff]] | Operational state for new sessions |
-| [[25_Architecture_Diagram]] | System diagram reference |
 
 ---
 
