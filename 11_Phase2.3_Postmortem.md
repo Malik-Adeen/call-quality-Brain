@@ -4,6 +4,9 @@ date: 2026-04-11
 status: complete
 ---
 
+> Previous: [[09_Phase2.2_Postmortem]] · Next: [[12_Phase2.4_Postmortem]] · Index: [[00_Master_Dashboard]]
+> See [[01_Master_Architecture]] for LLM provider chain spec
+
 ## What Was Built
 
 `llm_client.py` — Groq primary / OpenRouter fallback inference chain using httpx.
@@ -15,41 +18,38 @@ Full test confirmed: task dispatched against seeded call, 9-field dict returned,
 ## Bugs Encountered & Resolutions
 
 | Bug | Root Cause | Fix |
-| --- | --- | --- |
-| `llama-3.1-70b-versatile` returns HTTP 400 | Model deprecated by Groq | Updated to `llama-3.3-70b-versatile` in `llm_client.py` and both `01_Master_Architecture.md` copies |
-| `run_inference("")` did not raise | Empty transcript guard missing — Groq returned scores for empty input | Added `if not transcript or not transcript.strip(): raise ValueError` at top of `run_inference` |
-| `seed_data.py` crashed with `TypeError: unsupported format string passed to NoneType` | Verification print used `:<N>` format spec directly on psycopg2 `Decimal`/`None` values | Wrapped all row values in `str()` before f-string formatting |
-| DB had 401 calls instead of 200 | Previous partial seed run left duplicate agents and ~201 rows | Noted for demo-day cleanup — wipe DB and re-run seed before final demo |
-| `worker_io` had no volume mount | `../backend:/app` was missing from compose — worker ran stale built image | Added volume mount to `worker_io` in `docker-compose.yml` before Phase 2.3 started |
-| `MINIO_ENDPOINT=cq_minio:9000` in `.env` | Underscores rejected by botocore RFC validation | Corrected to `cq-minio:9000` in `.env` |
+|---|---|---|
+| `llama-3.1-70b-versatile` returns HTTP 400 | Model deprecated by Groq | Updated to `llama-3.3-70b-versatile` |
+| `run_inference("")` did not raise | Empty transcript guard missing | Added `if not transcript or not transcript.strip(): raise ValueError` |
+| `seed_data.py` crashed with `TypeError` | Verification print used format spec on psycopg2 `Decimal`/`None` values | Wrapped all row values in `str()` before f-string formatting |
+| DB had 401 calls instead of 200 | Previous partial seed run left duplicate agents | Noted for demo-day cleanup — wipe DB and re-run seed |
+| `MINIO_ENDPOINT=cq_minio:9000` in `.env` | Underscores rejected by botocore | Corrected to `cq-minio:9000` |
 
 ## Architecture Decisions
 
-- `llm_client.py` uses `os.environ.get()` directly — never imports from `config.py` to avoid pydantic-settings validation errors inside Celery workers
-- Fallback triggers on HTTP 429 and 503 only — not on parse errors or validation failures
-- `InferenceResult` Pydantic model validates ranges before returning — out-of-range scores raise `ValueError` and trigger retry on next provider
-- MD5 cache is process-local (module-level dict) — resets on worker restart, sufficient for demo lifetime
-- `run_groq_inference` returns a full dict — Phase 2.4 `write_scores` receives this as Celery chain pipe input
-- Model: `llama-3.1-70b-versatile` on Groq — never `llama-3.1-8b-instant`
+- `llm_client.py` uses `os.environ.get()` directly — never imports from `config.py` to avoid pydantic-settings errors in Celery workers
+- Fallback triggers on HTTP 429 and 503 only
+- `InferenceResult` validates ranges before returning — out-of-range scores raise `ValueError` and trigger retry on next provider
+- MD5 cache is process-local (module-level dict) — resets on worker restart
+- Model: `llama-3.3-70b-versatile` — never `llama-3.1-70b-versatile` (deprecated)
 
 ## Invariants Confirmed
 
-- `run_groq_inference` routes to `io_queue` exclusively — never `gpu_queue`
-- Groq fallback triggers on 429/503 only
-- OpenRouter is fallback only — never called if Groq succeeds
+- `run_groq_inference` routes to `io_queue` exclusively
+- Groq fallback triggers on 429/503 only — OpenRouter never called if Groq succeeds
 - All float scores validated within declared ranges before task returns
-- Raw transcript read from DB — never logged, only passed to inference
+- Raw transcript never logged — only passed to inference
 
 ## Test Result
 
 ```python
 {
-  'call_id': '59ab08c8-a967-4ae1-8d4a-eb47bb22639a',
+  'call_id': '59ab08c8-...',
   'politeness_score': 0.85,
   'clarity_score': 0.92,
   'resolution_score': 0.78,
   'sentiment_delta': 0.42,
-  'coaching_summary': "Agent could have empathized more with the customer's frustration and provided a clearer explanation of the billing process. Additionally, the agent should have offered a more concrete solution to resolve the issue.",
+  'coaching_summary': "Agent could have empathized more...",
   'issue_category': 'billing_dispute',
   'resolved': True,
   'sentiment_start': -0.65,
@@ -58,9 +58,3 @@ Full test confirmed: task dispatched against seeded call, 9-field dict returned,
 ```
 
 Flower: SUCCESS on `worker_io@086696510e9e`
-
-## Next Phase Entry Conditions
-
-- `run_groq_inference` returns valid 9-field dict on 10 consecutive calls
-- Phase 2.4 ready to wire: `compute_talk_balance` + `write_scores` + `notify_websocket` + full chain
-- DB cleanup required before demo: wipe duplicate agents and calls, re-seed fresh 200 rows

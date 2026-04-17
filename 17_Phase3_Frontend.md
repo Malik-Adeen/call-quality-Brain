@@ -4,50 +4,35 @@ date: 2026-04-11
 status: complete
 ---
 
+> Previous: [[16_Phase3A_Read_Endpoints]] · Next: [[21_UI_Redesign_Postmortem]] · Index: [[00_Master_Dashboard]]
+> Design system: [[15_Design_System]] (original dark) → [[20_New_Design_System]] (final light)
+
 ## What Was Built
 
-Full React 18 + TypeScript dashboard with 5 modules, all wired to live backend API.
-
-## Modules
+Full React 18 + TypeScript dashboard with 6 modules, wired to live backend API.
 
 | Module | Route | Status |
-| --- | --- | --- |
+|---|---|---|
 | Login | `/login` | ✅ JWT auth, redirects to dashboard |
-| KPI Overview | `/` | ✅ 4 stat cards + sparklines, live data |
-| Call List | `/calls` | ✅ Paginated table, 6 filters, score colours |
-| Call Detail | `/calls/:id` | ✅ Transcript, sentiment chart, score bars, audio player |
-| Agent View | `/agents` | ✅ Score history chart, team benchmark, strengths/weaknesses |
-| Reports | `/reports` | ✅ PDF export, WebSocket toast, live indicator |
+| KPI Overview | `/` | ✅ 4 stat cards + sparklines |
+| Call List | `/calls` | ✅ Paginated table, filters, score colours |
+| Call Detail | `/calls/:id` | ✅ Transcript, sentiment chart, score bars |
+| Agent View | `/agents` | ✅ Score history chart, strengths/weaknesses |
+| Reports | `/reports` | ✅ PDF export, WebSocket toast |
 
-## Tech Stack Used
+## Tech Stack
 
-- React 18 + TypeScript + Vite
-- TailwindCSS v4 (via @tailwindcss/vite plugin)
-- Recharts — LineChart, AreaChart, BarChart
-- Zustand — JWT stored in memory only
-- Axios — JWT injected via interceptor, 401 redirects to login
-- React Router v6
-- lucide-react icons
-
-## Design Tokens Applied
-
-All from `15_Design_System.md`:
-- Background: `bg-gray-900`
-- Cards: `bg-gray-800 rounded-lg border border-gray-700`
-- Score colours: emerald ≥7.5 / amber 5.5-7.4 / rose <5.5
-- Accent: `blue-500` / `#3b82f6`
-- Recharts tooltip: `#1f2937` bg, `#374151` border
+React 18 + TypeScript + Vite · TailwindCSS v4 · Recharts · Zustand · Axios · React Router v6 · lucide-react
 
 ## Architecture Decisions
 
 - Vite proxy `/api` → `http://localhost:8000` — no CORS issues in dev
-- JWT never in localStorage — Zustand memory store only
-- WebSocket connects on Reports page mount, reconnects with exponential backoff (1s→30s cap)
-- Transcript falls back to plain text lines if diarized_segments is empty
-- Agent list built dynamically from call list response — no separate agents endpoint needed
+- JWT never in localStorage — Zustand memory store
+- WebSocket reconnects with exponential backoff (1s→30s cap) on Reports page
+- Agent list built dynamically from call list response — no separate agents endpoint
 
-## Next Steps
+## Known Issues at End of Phase
 
-- Phase 4: Demo hardening — DB cleanup, Azure deployment, demo day prep
-- PDF export requires Playwright backend service (reports.py stub — Phase 4)
-- Audio sync requires diarized segments to be persisted to DB (currently pipeline stores transcript only)
+- Dark theme — replaced in [[21_UI_Redesign_Postmortem]]
+- Audio player had CORS issues — removed, deferred to [[19_Future_Transcript_Audio_Sync]]
+- PDF export stubbed — completed in [[23_Phase4_Postmortem]]

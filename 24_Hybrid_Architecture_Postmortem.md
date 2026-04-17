@@ -1,7 +1,14 @@
 ---
-tags: [phase-4, azure, hybrid-architecture, ssh-tunnel, celery-wan, websocket]
+tags: [phase-4, azure, hybrid-architecture, ssh-tunnel, celery-wan, websocket, infrastructure]
 date: 2026-04-16
 status: complete
+---
+
+# 24 — Hybrid Architecture Postmortem
+
+> Previous: [[23_Phase4_Postmortem]] · Next: [[26_Audio_Testing_Postmortem]]
+> See [[11_Azure_Deployment]] for runbooks · [[10_GPU_Infrastructure]] for GPU spec
+
 ---
 
 ## What Was Built
@@ -18,19 +25,18 @@ SSH key-based auth set up — no password prompts on tunnel reconnect.
 
 | Bug | Root Cause | Fix |
 |---|---|---|
-| `TypeError: 'str' object cannot be interpreted as an integer` on worker start | `broker_transport_options` socket keepalive keys passed as strings — Linux containers require integer socket constants | Replaced string keys with `socket.TCP_KEEPIDLE`, `socket.TCP_KEEPINTVL`, `socket.TCP_KEEPCNT` from Python `socket` module |
-| WebSocket toast not firing | WebSocket hardcoded to `ws://localhost:8000` — didn't follow Vite proxy to Azure | Changed to `${wsProtocol}//${window.location.host}/ws/...` — proxied through Vite automatically |
-| `docker-compose up --build` took 2786s on B2s | B2s has 2 vCPU — full Dockerfile.gpu build including PyTorch 731MB download | Excluded `worker_gpu` from B2s deploy entirely — GPU worker runs locally only |
-| `worker_gpu` image orphan warning | `docker-compose.hybrid.yml` only defines `worker_gpu` but other containers exist on same network | Expected warning — use `--remove-orphans` only if explicitly cleaning up |
+| `TypeError: 'str' object cannot be interpreted as an integer` | Socket keepalive keys passed as strings | Replaced with `socket.TCP_KEEPIDLE`, `socket.TCP_KEEPINTVL`, `socket.TCP_KEEPCNT` |
+| WebSocket toast not firing | WebSocket hardcoded to `ws://localhost:8000` | Changed to `${wsProtocol}//${window.location.host}/ws/...` |
+| `docker-compose up --build` took 2786s on B2s | 2 vCPU B2s — full Dockerfile.gpu build | Excluded `worker_gpu` from B2s deploy — runs locally only |
+| Orphan warning on hybrid compose | Only `worker_gpu` defined but other containers exist | Expected — use `--remove-orphans` only if cleaning up |
 
 ## Architecture Decisions
 
-- **SSH tunnel over Tailscale/WireGuard** — Pakistan's national firewall (DPI) throttles UDP; SSH port 22 TCP bypasses it entirely. Validated by 4 independent LLM research opinions including Gemini Deep Research with citations.
-- **`host.docker.internal`** — GPU worker Docker container reaches SSH tunnel ports on the Windows host via this alias
-- **`--without-gossip --without-mingle`** on GPU worker — eliminates AMQP chatter that causes desync panics on high-latency WAN links
-- **`task_acks_late = True`** — tasks acknowledged only after completion, prevents duplicate WhisperX processing if tunnel drops mid-inference
-- **`visibility_timeout = 3600`** — 1 hour lock on queued tasks, prevents Redis from reassigning a long-running inference task
-- **Vite proxy** handles both REST (`/api`) and WebSocket (`/ws`) routing to Azure — frontend code never hardcodes IP addresses
+- **SSH tunnel over Tailscale/WireGuard** — Pakistan's national DPI firewall throttles UDP. SSH port 22 TCP bypasses it. Validated by 4 independent LLM research opinions including Gemini Deep Research.
+- **`host.docker.internal`** — GPU worker Docker container reaches SSH tunnel ports on the Windows host
+- **`--without-gossip --without-mingle`** — eliminates AMQP chatter on high-latency WAN links
+- **`task_acks_late = True`** — acknowledges tasks only after completion, prevents duplicate WhisperX processing
+- **`visibility_timeout = 3600`** — prevents Redis from reassigning long-running inference tasks
 
 ## Network Architecture
 
@@ -40,7 +46,7 @@ Browser (localhost:5173)
 Azure B2s (20.228.184.111:8000)
     FastAPI · PostgreSQL · Redis · MinIO · worker_io · Flower
     ↕ Celery tasks via Redis
-SSH Tunnel (localhost:6379/5432/9000 → Azure)
+SSH Tunnel (localhost:6379/5432/9000 → Azure via port 22)
     ↕
 Local RTX 3060 Ti
     worker_gpu (WhisperX large-v2 · ~33s inference)
@@ -48,32 +54,29 @@ Local RTX 3060 Ti
 
 ## Validated Outputs
 
-- Full E2E hybrid pipeline: local upload → Azure API → SSH tunnel → local GPU → Azure DB → Azure dashboard
-- `James O'Brien · Sales · 92% · Positive · Resolved` appeared in Azure Call List ✅
-- GPU worker logs confirmed: `transport: redis://host.docker.internal:6379/0` ✅
-- All 6 pipeline tasks registered on `gpu_queue` ✅
+- Full E2E: local upload → Azure API → SSH tunnel → local GPU → Azure DB → Azure dashboard
+- `James O'Brien · Sales · 92%` confirmed in Azure Call List ✅
+- `transport: redis://host.docker.internal:6379/0` in worker logs ✅
 
 ## Files Created
 
 | File | Purpose |
 |---|---|
-| `scripts/tunnel.bat` | Auto-reconnect SSH tunnel with keep-alives — run before demo |
+| `scripts/tunnel.bat` | Auto-reconnect SSH tunnel — run before demo |
 | `infra/docker-compose.hybrid.yml` | GPU worker only — connects to Azure via tunnel |
-| `infra/.env.azure-worker` | Local worker env pointing at localhost tunnel ports (gitignored) |
-| `backend/app/celery_app.py` | WAN-tuned Celery config with socket keepalives and late acks |
+| `infra/.env.azure-worker` | Local worker env (gitignored) |
+| `backend/app/celery_app.py` | WAN-tuned Celery with socket keepalives |
 
 ## Invariants Confirmed
 
-- `run_whisperx` → `gpu_queue` exclusively, concurrency=1 ✅
-- Audio fetched from Azure MinIO via SSH tunnel ✅
-- Results written to Azure PostgreSQL via SSH tunnel ✅
-- JWT never in localStorage ✅
-- `.env.azure-worker` gitignored — API keys never committed ✅
+- `run_whisperx` → `gpu_queue`, concurrency=1 ✅
+- `.env.azure-worker` gitignored ✅
+- Port 6379 conflict: never run local `cq_redis` + `tunnel.bat` simultaneously
 
-## Next Phase Entry Conditions (Demo Day)
+## Next Phase Entry Conditions
 
-- `tunnel.bat` running → `curl http://localhost:6379` responds (or redis-cli ping)
+- `tunnel.bat` running silently (SSH key auth, no password)
 - `docker compose -f infra/docker-compose.hybrid.yml up -d worker_gpu` starts cleanly
-- Upload `.wav` → score appears in Azure dashboard within 60s
-- WebSocket toast fires on Reports page (Live indicator green)
-- `git pull` on Azure VM to pick up latest commits
+- `docker logs cq_worker_gpu --tail 5` shows `sync with worker_io`
+- Upload `.wav` → score in Azure dashboard within 60s
+- WebSocket toast fires on Reports page

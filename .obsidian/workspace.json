@@ -60,9 +60,64 @@
               "icon": "lucide-file",
               "title": "00_Master_Dashboard"
             }
+          },
+          {
+            "id": "3892b160b0179a98",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "CONTEXT.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CONTEXT"
+            }
+          },
+          {
+            "id": "b19a86cb6ba56836",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "00_Master_Dashboard.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "00_Master_Dashboard"
+            }
+          },
+          {
+            "id": "d938b48631c100bc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "00_Master_Dashboard.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "00_Master_Dashboard"
+            }
+          },
+          {
+            "id": "8d5ddde91c134ae1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "22_Session_Handoff.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "22_Session_Handoff"
+            }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "vertical"
@@ -119,8 +174,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "46c7c9c930ff9cd1",
@@ -234,9 +288,12 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "8513a7e92dab1c70",
+  "active": "91d0861913fcdf8c",
   "lastOpenFiles": [
     "22_Session_Handoff.md",
+    "00_Master_Dashboard.md",
+    "CONTEXT.md",
+    "ROADMAP.md",
     "23_Phase4_Postmortem.md",
     "11_Azure_Deployment.md",
     "21_UI_Redesign_Postmortem.md",
@@ -254,7 +311,6 @@
     "01_Master_Architecture.md",
     "PROJECT_ROADMAP_1.md",
     "08_Phase2.1_Postmortem.md",
-    "00_Master_Dashboard.md",
     "00_Master_Dashboard.md.tmp.9512.1775890726660"
   ]
 }
