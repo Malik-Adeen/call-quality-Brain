@@ -2,14 +2,14 @@
 tags: [moc, dashboard, fyp]
 status: active
 created: 2026-04-11
-updated: 2026-04-17
+updated: 2026-04-18
 ---
 
 # 00 — Master Dashboard
 
 > Single entry point for the entire knowledge vault.
 > Read this first at the start of any working session.
-> For LLM sessions: paste [[CONTEXT]] for full project context.
+> For LLM sessions: Claude reads [[GRAPH_REPORT]] via filesystem (fastest) or paste [[INVARIANTS]] (500 tokens).
 
 ---
 
@@ -51,12 +51,25 @@ updated: 2026-04-17
 
 ---
 
+## LLM Context Loading (fastest to slowest)
+
+| Method | Tokens | How |
+|---|---|---|
+| `GRAPH_REPORT.md` via filesystem | ~1,100 | Claude reads directly — no paste needed |
+| `INVARIANTS.md` paste | ~500 | For Qwen/Gemini sessions |
+| `CONTEXT.md` paste | ~2,500 | Full architecture for complex decisions |
+| Full vault paste | ~30,000 | Gemini 1.5 Pro only (free, 1M context) |
+
+Update graph after code changes: `python scripts/build_graph.py`
+
+---
+
 ## Startup Runbooks
 
-| Mode | When to use | Runbook |
+| Mode | When | Runbook |
 |---|---|---|
-| **Hybrid** | Azure B2s running, local GPU for inference | [[STARTUP_HYBRID]] |
-| **Local** | Offline / all services on local machine | [[STARTUP_LOCAL]] |
+| Hybrid | Azure B2s running, local GPU | [[STARTUP_HYBRID]] |
+| Local | Offline, all services local | [[STARTUP_LOCAL]] |
 
 ---
 
@@ -66,7 +79,7 @@ updated: 2026-04-17
 - [ ] `git pull` + `docker restart cq_worker_io` on Azure VM
 - [ ] `reset_and_seed.py` on Azure VM
 - [ ] Verify `http://20.228.184.111:8000/health` responds
-- [ ] Re-upload bpo_inbound_1, confirm `<ZIP_CODE>` + `<SSN>` in transcript
+- [ ] `python scripts/build_graph.py` — refresh GRAPH_REPORT.md
 
 ---
 
@@ -76,7 +89,7 @@ See [[ROADMAP]] · Phase 5 research: [[06_Urdu_ASR_Research]]
 
 ---
 
-## Architecture Summary
+## Architecture
 
 ```
 Browser → Vite proxy → Azure B2s (FastAPI + PG + Redis + MinIO + worker_io)
@@ -84,30 +97,21 @@ Browser → Vite proxy → Azure B2s (FastAPI + PG + Redis + MinIO + worker_io)
                        Local RTX 3060 Ti (worker_gpu · WhisperX large-v2)
 ```
 
-Full spec: [[01_Master_Architecture]] · Azure runbooks: [[11_Azure_Deployment]] · GPU: [[10_GPU_Infrastructure]]
+Full spec: [[01_Master_Architecture]] · Azure: [[11_Azure_Deployment]] · GPU: [[10_GPU_Infrastructure]]
 
 ---
 
-## Critical Invariants
+## Critical Invariants (full list: [[INVARIANTS]])
 
-1. Audio → MinIO only (`minio_audio_path`), never PostgreSQL
+1. Audio → `minio_audio_path`, never PostgreSQL
 2. Raw transcript → never DB, Presidio-redacted only
-3. `pii_redacted = TRUE` before any downstream task
+3. `pii_redacted=TRUE` before `run_groq_inference`
 4. `run_whisperx` → `gpu_queue`, concurrency=1
 5. JWT → sessionStorage, never localStorage
-6. Groq model: `llama-3.3-70b-versatile`
-7. MinIO endpoint: `cq-minio:9000` (hyphens, not underscores)
-8. Score: stored 0–10, displayed as % (×10)
+6. Groq: `llama-3.3-70b-versatile`
+7. MinIO: `cq-minio:9000` (hyphens)
+8. Score: stored 0–10, displayed ×10 as %
 9. Zero code comments
-
-Full rules: [[INVARIANTS]]
-
----
-
-## LLM Workflow
-
-See [[PROMPTING_GUIDE]] for model routing, prompt templates, and token efficiency.
-See [[INVARIANTS]] for the 500-token rules block to paste into Qwen/Gemini.
 
 ---
 
@@ -115,8 +119,9 @@ See [[INVARIANTS]] for the 500-token rules block to paste into Qwen/Gemini.
 
 | File | Purpose |
 |---|---|
+| [[GRAPH_REPORT]] | Auto-generated knowledge graph — Claude reads this via filesystem |
 | [[CONTEXT]] | Universal LLM context — paste into any chat |
-| [[INVARIANTS]] | 500-token rules block for Qwen/Gemini sessions |
+| [[INVARIANTS]] | 500-token rules block for Qwen/Gemini |
 | [[PROMPTING_GUIDE]] | Model routing, templates, token efficiency |
 | [[ROADMAP]] | FYP phases beyond the demo |
 | [[STARTUP_HYBRID]] | Azure B2s + local GPU startup runbook |
@@ -129,6 +134,7 @@ See [[INVARIANTS]] for the 500-token rules block to paste into Qwen/Gemini.
 | [[11_Azure_Deployment]] | B2s + SSH tunnel runbook |
 | [[20_New_Design_System]] | Light parchment design tokens |
 | [[19_Future_Transcript_Audio_Sync]] | Deferred audio sync feature |
+| [[06_Urdu_ASR_Research]] | Phase 5 Urdu ASR research |
 
 ---
 

@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "c8a6857a31f610d1",
+        "id": "5ba48e15eff075d5",
         "type": "tabs",
         "children": [
           {
-            "id": "b39969d432295a44",
+            "id": "982ab6200c949b8a",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "25_Architecture_Diagram.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "25_Architecture_Diagram"
+              "title": "New tab"
             }
           }
         ]
@@ -41,7 +37,7 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": true
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -74,13 +70,11 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "46c7c9c930ff9cd1",
@@ -194,13 +188,16 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "b39969d432295a44",
+  "active": "982ab6200c949b8a",
   "lastOpenFiles": [
+    "CODEBASE_MAP.md",
+    "GRAPH_REPORT.md",
+    "Untitled.md",
+    "25_Architecture_Diagram.md",
     "STARTUP_LOCAL.md",
     "STARTUP_HYBRID.md",
     "22_Session_Handoff.md",
     "00_Master_Dashboard.md",
-    "Untitled.md",
     "CONTEXT.md",
     "ROADMAP.md",
     "23_Phase4_Postmortem.md",
@@ -219,7 +216,6 @@
     "12_Phase2.4_Postmortem.md",
     "01_Master_Architecture.md",
     "PROJECT_ROADMAP_1.md",
-    "08_Phase2.1_Postmortem.md",
     "00_Master_Dashboard.md.tmp.9512.1775890726660"
   ]
 }
