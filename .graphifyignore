@@ -1,0 +1,8 @@
+# graphify ignore — docs vault
+# Excludes Obsidian internals and git
+
+.obsidian/
+.git/
+.claude/
+graphify-out/
+*.svg
