@@ -4,48 +4,78 @@
   "showTags": true,
   "showAttachments": false,
   "hideUnresolved": false,
-  "showOrphans": false,
+  "showOrphans": true,
   "collapse-color-groups": false,
   "colorGroups": [
     {
       "query": "tag:#phase-1",
-      "color": {"a": 1, "rgb": 5614848}
+      "color": {
+        "a": 1,
+        "rgb": 5614848
+      }
     },
     {
       "query": "tag:#phase-2",
-      "color": {"a": 1, "rgb": 16744272}
+      "color": {
+        "a": 1,
+        "rgb": 16744272
+      }
     },
     {
       "query": "tag:#phase-3",
-      "color": {"a": 1, "rgb": 1084160}
+      "color": {
+        "a": 1,
+        "rgb": 1084160
+      }
     },
     {
       "query": "tag:#phase-4",
-      "color": {"a": 1, "rgb": 8650752}
+      "color": {
+        "a": 1,
+        "rgb": 8650752
+      }
     },
     {
       "query": "tag:#infrastructure",
-      "color": {"a": 1, "rgb": 9840549}
+      "color": {
+        "a": 1,
+        "rgb": 9840549
+      }
     },
     {
       "query": "tag:#planning",
-      "color": {"a": 1, "rgb": 11079439}
+      "color": {
+        "a": 1,
+        "rgb": 11079439
+      }
     },
     {
       "query": "tag:#moc",
-      "color": {"a": 1, "rgb": 16777215}
+      "color": {
+        "a": 1,
+        "rgb": 16777215
+      }
     },
     {
       "query": "tag:#fyp",
-      "color": {"a": 1, "rgb": 6750054}
+      "color": {
+        "a": 1,
+        "rgb": 6750054
+      }
     },
     {
       "query": "tag:#handoff",
-      "color": {"a": 1, "rgb": 16744448}
+      "color": {
+        "a": 1,
+        "rgb": 16744448
+      }
     },
     {
       "query": "tag:#graph",
-      "color": {"a": 1, "rgb": 16711935}
+      "color": {
+        "a": 1,
+        "rgb": 16711935
+      }
     }
   ],
   "collapse-display": false,
@@ -58,6 +88,6 @@
   "repelStrength": 14,
   "linkStrength": 0.8,
   "linkDistance": 350,
-  "scale": 0.6693494752865823,
+  "scale": 0.1509311010640914,
   "close": false
 }

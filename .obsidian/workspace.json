@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "5ba48e15eff075d5",
+        "id": "a34042f398406dfd",
         "type": "tabs",
         "children": [
           {
-            "id": "982ab6200c949b8a",
+            "id": "8ce15fb1f04fb726",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "graph",
               "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -188,8 +188,11 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "982ab6200c949b8a",
+  "active": "8ce15fb1f04fb726",
   "lastOpenFiles": [
+    "02_Database_Schema.md",
+    "07_Phase1_Postmortem.md",
+    "00_Master_Dashboard.md",
     "CODEBASE_MAP.md",
     "GRAPH_REPORT.md",
     "Untitled.md",
@@ -197,7 +200,6 @@
     "STARTUP_LOCAL.md",
     "STARTUP_HYBRID.md",
     "22_Session_Handoff.md",
-    "00_Master_Dashboard.md",
     "CONTEXT.md",
     "ROADMAP.md",
     "23_Phase4_Postmortem.md",
@@ -214,8 +216,6 @@
     "11_Phase2.3_Postmortem.md",
     "11_Phase2.3_Groq_Inference.md",
     "12_Phase2.4_Postmortem.md",
-    "01_Master_Architecture.md",
-    "PROJECT_ROADMAP_1.md",
     "00_Master_Dashboard.md.tmp.9512.1775890726660"
   ]
 }

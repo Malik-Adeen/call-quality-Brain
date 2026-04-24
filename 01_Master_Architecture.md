@@ -215,18 +215,18 @@ Port 6379 conflict causes worker_gpu to talk to local Redis while Azure API writ
 
 Reference: `10_GPU_Infrastructure.md`
 
-| Property | Value |
-|---|---|
-| GPU | NVIDIA RTX 3060 Ti |
-| VRAM | 8GB |
-| CUDA | 12.1.0 |
-| Dockerfile.gpu base | nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04 |
-| PyTorch | 2.2.0+cu121 |
-| Python in GPU image | 3.11 (manually installed — base image ships 3.10) |
-| WhisperX VRAM | ~3GB |
-| Pyannote VRAM | ~1GB |
-| Combined peak | ~4-5GB |
-| numpy | Must be < 2.0 (last pip install step in Dockerfile.gpu) |
+| Property            | Value                                                   |
+| ------------------- | ------------------------------------------------------- |
+| GPU                 | NVIDIA RTX 3060 Ti                                      |
+| VRAM                | 8GB                                                     |
+| CUDA                | 12.1.0                                                  |
+| Dockerfile.gpu base | nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04           |
+| PyTorch             | 2.2.0+cu121                                             |
+| Python in GPU image | 3.11 (manually installed — base image ships 3.10)       |
+| WhisperX VRAM       | ~3GB                                                    |
+| Pyannote VRAM       | ~1GB                                                    |
+| Combined peak       | ~4-5GB                                                  |
+| numpy               | Must be < 2.0 (last pip install step in Dockerfile.gpu) |
 
 Cache volume mounts (Windows host):
 - `C:\Users\adeen\.cache\huggingface` → `/root/.cache/huggingface`

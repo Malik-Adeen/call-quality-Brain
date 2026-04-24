@@ -17,12 +17,12 @@ Full 6-stage chain wired in `calls.py`: `run_whisperx → redact_pii → compute
 
 ## Bugs Encountered & Resolutions
 
-| Bug | Root Cause | Fix |
-|---|---|---|
-| `politeness_score written` test failed | Seeded call already had a `call_metrics` row — `fetchone()` returned old seeded row | Added `DELETE FROM call_metrics WHERE call_id = ?` inside atomic transaction |
-| `calls.status = failed` test failed | `float("not_a_number")` raised before entering `try` block | Moved all float conversions inside the `try` block |
-| `ws.py` imported non-existent `decode_token` | Function is named `decode_access_token` in `app.auth.jwt` | Fixed import |
-| `calls.py` chain edit matched wrong location | `str_replace` matched first `return ApiResponse(` | Rewrote entire `calls.py` cleanly |
+| Bug                                          | Root Cause                                                                          | Fix                                                                          |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `politeness_score written` test failed       | Seeded call already had a `call_metrics` row — `fetchone()` returned old seeded row | Added `DELETE FROM call_metrics WHERE call_id = ?` inside atomic transaction |
+| `calls.status = failed` test failed          | `float("not_a_number")` raised before entering `try` block                          | Moved all float conversions inside the `try` block                           |
+| `ws.py` imported non-existent `decode_token` | Function is named `decode_access_token` in `app.auth.jwt`                           | Fixed import                                                                 |
+| `calls.py` chain edit matched wrong location | `str_replace` matched first `return ApiResponse(`                                   | Rewrote entire `calls.py` cleanly                                            |
 
 ## Chain Signature Map
 
