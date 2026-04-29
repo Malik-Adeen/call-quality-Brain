@@ -1,5 +1,5 @@
 # GRAPH REPORT — AI Call Quality Analytics System
-Generated: 2026-04-18 10:18 | Run `python scripts/build_graph.py` to update
+Generated: 2026-04-29 21:39 | Run `python scripts/build_graph.py` to update
 
 ---
 
@@ -106,10 +106,11 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
 
 ---
 
-## FRONTEND FILES (15 ts/tsx files)
+## FRONTEND FILES (16 ts/tsx files)
 
   auth.ts: exports:[useAuthStore]
   api.ts: exports:[ApiError,ApiResponse,CallMetrics]
+  dashboardTransforms.ts: exports:[GroupedDayPoint,CoachingRiskAgent,IssueSpikePoint]
   format.ts: exports:[scoreColor,scoreBadgeStyle,scoreBadge]
   App.tsx: exports:[App]
   CallDetailPanel.tsx: exports:[CallDetailPanel]
@@ -124,7 +125,7 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
 
 ---
 
-## VAULT (35 docs)
+## VAULT (44 docs)
 
   00_Master_Dashboard.md: 00 — Master Dashboard | Project Identity | Build State — v1.4
   01_Master_Architecture.md: 01 — Master Architecture & Stack Manifest | 1. System Identity | 2. Mandated Tech Stack
@@ -147,13 +148,18 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
   19_Future_Transcript_Audio_Sync.md: Future Implementation: Transcript Audio Sync | What It Is | Current Behaviour
   20_New_Design_System.md: 20 — New Design System (Google AI Studio Inspired) | Design Philosophy | Colour Palette
   21_UI_Redesign_Postmortem.md: What Was Built | Bugs Encountered & Resolutions | Architecture Decisions
-  22_Session_Handoff.md: 22 — LLM Session Starter | Current State — v1.4 (as of 2026-04-17) | How to Start the System (Hybrid
+  22_Session_Handoff.md: 22 — LLM Session Starter | Current State — v1.4 (as of 2026-04-18) | Context Loading Options
   23_Phase4_Postmortem.md: What Was Built | Bugs Encountered & Resolutions | Architecture Decisions
   24_Hybrid_Architecture_Postmortem.md: 24 — Hybrid Architecture Postmortem | What Was Built | Bugs Encountered & Resolutions
   25_Architecture_Diagram.md: Architecture Diagram — Hybrid Cloud System | What the diagram shows | Arrow key
   26_Audio_Testing_Postmortem.md: 26 — Audio Testing Postmortem | What Was Built / Tested | Audio Test Results
   27_Presidio_Extension_Postmortem.md: 27 — Presidio Extension Postmortem | What Was Built | New Recognizers Added
+  28_WhisperX_Debug_System.md: WhisperX Self-Improving Debug System — Architecture Spec | 1. Project Summary | 2. Core Architecture
+  29_Session_Handoff_2026-04-29.md: Session Handoff — 2026-04-29 | System State: v1.4 — DEMO READY | What Was Done This Session
+  CODEBASE_MAP.md: CODEBASE MAP | Pipeline Flow | Backend God Nodes
   CONTEXT.md: PROJECT CONTEXT — AI Call Quality & Agent Performance Analytics System | 1. Who is Building This | 2
+  GRAPH_REPORT.md: GRAPH REPORT — AI Call Quality Analytics System | GOD NODES (highest connectivity) | PIPELINE (seque
+  GRAPH_REPORT_LINK.md: GRAPH_REPORT — see N:\projects\docs\GRAPH_REPORT.md | tags: [graph, knowledge-graph, token-efficienc
   INVARIANTS.md: INVARIANTS — AI Call Quality Analytics System | Stack (frozen — no deviations) | Column Names (exact
   LOG.md: LOG — Daily Session Notes | 2026-04-17 — v1.4 complete. Azure B2s deployed. Hybrid SSH tunnel verifi
   PROJECT_ROADMAP_1.md: AI Call Quality & Agent Performance Analytics System | Project Master Roadmap & Architectural Specif
@@ -161,6 +167,9 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
   ROADMAP.md: ROADMAP — AI Call Quality & Agent Performance Analytics System | Completed Phases | Planned Phases
   STARTUP_HYBRID.md: STARTUP — Hybrid Mode (Azure B2s + Local RTX 3060 Ti) | Prerequisites | Critical Warning
   STARTUP_LOCAL.md: STARTUP — Local Mode (All Services on Local Machine) | Prerequisites | Critical Warning
+  demo-readiness.md: Demo Readiness — 2026-04-19 | System Status | Pre-Demo Checklist (run in order)
+  ui-audit-latest.md: UI Audit — Latest (2026-04-19) | A) Claims Extracted | B) Verification Table
+  ui-polish-overview-agents-callhistory.md: UI Polish Changelog — Overview, Agents, Call History, Call Detail | CallList.tsx | CallDetailPanel.t
 
 ---
 
