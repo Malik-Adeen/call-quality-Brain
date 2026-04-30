@@ -1,13 +1,14 @@
 ---
-tags: [planning, fyp, roadmap]
-date: 2026-04-17
+tags: [planning, saas, roadmap]
+date: 2026-04-30
 status: active
 ---
 
 # ROADMAP — AI Call Quality & Agent Performance Analytics System
 
-> FYP extended roadmap. See [[00_Master_Dashboard]] for current build state.
-> See [[CONTEXT]] for full project architecture.
+> B2B SaaS product roadmap. Project has transitioned from FYP demo to commercial product.
+> See [[00_Master_Dashboard]] for current build state.
+> See [[30_SaaS_Pivot_Plan]] for full pivot analysis, research findings, and implementation details.
 
 ---
 
@@ -31,84 +32,104 @@ Playwright PDF. Azure B2s. SSH tunnel hybrid architecture. Extended Presidio PII
 
 ---
 
-## Planned Phases
+## Planned Phases (B2B SaaS)
 
-### Phase 5 — Urdu/English Code-Switched ASR
-**Research:** [[06_Urdu_ASR_Research]]
-**Goal:** Reduce WER on Pakistani call center audio from ~35% to <10%.
+> Full analysis for all phases in [[30_SaaS_Pivot_Plan]].
 
-Core approach: QLoRA fine-tuning of WhisperX on narrowband 8kHz Urdu-English data.
-VRAM feasibility: RTX 3060 Ti (8GB) with 4-bit quantization — confirmed feasible.
+### Phase 5 — Multi-Tenancy
+**Goal:** Convert single-tenant system to isolated multi-tenant SaaS.
 
-Tasks:
-- Collect 15-20 hours labeled Urdu/English telephonic audio
-- QLoRA fine-tune WhisperX base (4-bit, LoRA rank 16)
-- Benchmark WER before/after on held-out test set
-- Replace model loading in `whisper_service.py` with fine-tuned checkpoint
-
-### Phase 6 — Real-Time Streaming Transcription
-**Goal:** Transcribe calls live as they happen, not post-call.
+Architecture decision: Shared tables + PostgreSQL Row-Level Security (not schema-per-tenant — catalog bloat at scale kills Alembic migration speed).
 
 Tasks:
-- WebSocket audio chunk receiver on FastAPI
-- WhisperX streaming mode (2-second chunk inference)
-- Live transcript in UI word-by-word
-- Speaker diarization on streaming chunks
+- New `tenants` table with `settings JSONB` for per-tenant config
+- Add `tenant_id UUID NOT NULL` to all tenant-scoped tables
+- PostgreSQL RLS policies with `FORCE ROW LEVEL SECURITY`
+- JWT gets `tenant_id` claim at login — all requests auto-scoped
+- `SET LOCAL app.current_tenant` per transaction (not SET SESSION)
+- `contextvars.ContextVar` in FastAPI for async-safe propagation
+- MinIO paths: `{tenant_id}/{call_id}.mp3` (currently flat)
+- `PLATFORM_ADMIN` role above `TENANT_ADMIN`
+- Tenant signup / onboarding flow
 
-### Phase 7 — Advanced Analytics
-**Goal:** Supervisors get automated weekly coaching reports and trend analysis.
-
-Tasks:
-- 30/60/90 day agent performance trend charts
-- Team comparison analytics
-- Automated weekly PDF emails to supervisors
-- Issue category clustering
-- Coaching effectiveness tracking
-
-### Phase 8 — Multi-Tenancy
-**Goal:** Multiple call centers as isolated tenants.
+### Phase 6 — Agent Integration
+**Goal:** Live agent roster sync from HR/workforce systems instead of manual seed data.
 
 Tasks:
-- Row-level DB security or schema-per-tenant
-- Tenant admin panel
-- Per-tenant LLM prompt customization
-- Per-tenant scoring weight configuration
+- Add `external_id TEXT`, `is_active BOOLEAN`, `email TEXT` to `agents` table
+- `POST /agents/sync` — bulk upsert by `external_id` within tenant (idempotent)
+- Soft-delete support for departed agents
 
-### Phase 9 — Mobile Supervisor App
-**Goal:** Call review and alerts on mobile.
+### Phase 7 — Agent Identity Extraction from Audio
+**Goal:** Automatically resolve `agent_id` from transcript — eliminate manual dropdown on upload.
+
+Decision: Groq API transcript parsing (zero VRAM, already in pipeline). No local LLM (OOM risk). No voice biometrics (GDPR Article 9).
 
 Tasks:
-- React Native (code-share with existing TypeScript types from [[03_API_Contract]])
-- Push notifications for low-scoring calls
-- Mobile call detail view
+- Add name extraction pass in `run_groq_inference`: prompt Groq to extract agent self-introduction
+- Fuzzy-match extracted name against `agents` table for the tenant
+- Add `needs_agent_review BOOLEAN`, `agent_name_extracted TEXT` to `calls` table
+- Make `agent_id` nullable on upload — auto-resolve post-transcription
+- Dashboard "Needs Review" flag for unresolved calls
+
+### Phase 8 — CRM Integration
+**Goal:** Pull customer data at upload; push quality scores back to CRM after scoring.
+
+Priority: Zendesk first (28% call center market share), Salesforce second, HubSpot third.
+
+Tasks:
+- Abstract `CRMAdapter` base class + `ZendeskAdapter` implementation
+- New `tenant_integrations` table (OAuth tokens, encrypted)
+- New `customers` table (CRM-synced customer data cached locally)
+- Add `customer_id`, `customer_tier` to `calls` table
+- `sync_crm_customer` Celery task — runs at upload time
+- `push_score_to_crm` Celery task — runs after `write_scores`
+- `POST /webhooks/crm/{crm_type}` — HMAC-validated webhook receiver
+
+### Phase 9 — High / Low Priority Customers
+**Goal:** Surface high-value customer calls prominently; alert supervisors on risk calls.
+
+Formula (adapted from NICE CXone Dynamic Delivery):
+```
+Base Priority = (0.35 × tier_score) + (0.40 × severity_score) + (0.15 × fcr_failure_score) + (0.10 × frequency_score)
+Dynamic Priority = Base Priority + (wait_seconds × tier_acceleration_rate)
+```
+
+Tasks:
+- Add `customer_priority TEXT`, `base_priority_score NUMERIC` to `calls` table
+- PostgreSQL trigger computes base priority on INSERT
+- Overview dashboard re-sorts "Requires Attention" panel by priority × agent score
+- Call list priority badge column
 
 ---
 
-## Research Directions
+## Dropped Scope
 
-### Urdu ASR Improvement
-Primary reference: [[06_Urdu_ASR_Research]]
-- QLoRA fine-tuning on CHiPSAL dataset
-- 8kHz telephony bandwidth gap bridging
-- Code-switching dual-lexicon language model
-
-### PII Detection Improvements
-Current gaps from [[27_Presidio_Extension_Postmortem]]:
-- Pakistani CNIC numbers (XXXXX-XXXXXXX-X)
-- Pakistani mobile numbers (+92 3XX XXXXXXX)
-- 4-digit PINs without context
-- Account numbers without "account" keyword
-
-### Scoring Model Improvement
-Current: entirely Groq LLM output.
-Future: lightweight classifier trained on labeled call data to validate/override LLM scores.
+### ~~Phase 5 — Urdu/English Code-Switched ASR~~
+**Dropped.** No code was written. Research archived at [[06_Urdu_ASR_Research]].
+Project has pivoted to B2B SaaS. ASR quality improvements are a future premium feature once tenant call data is available for fine-tuning.
 
 ---
 
-## Academic Deliverables
+## Deferred Phases
 
-| Deliverable | Description | Due |
+### Real-Time Streaming Transcription
+WebSocket audio chunk receiver. WhisperX streaming mode (2-second chunk inference). Live transcript word-by-word. Post Phase 9.
+
+### Advanced Analytics
+30/60/90 day trend charts. Team comparison. Automated weekly PDF coaching reports. Issue category clustering. Post Phase 9.
+
+### Mobile Supervisor App
+React Native. Push notifications for low-scoring calls. Mobile call detail view. Post Phase 9.
+
+---
+
+## Pricing Reference
+
+| Tier | Agents | Per-agent/month |
 |---|---|---|
-| Initial Demo | University final presentation | Week of April 21, 2026 |
-| FYP Report | Full technical report | TBD |
-| Research Paper | Urdu ASR fine-tuning results (Phase 5) | TBD |
+| SMB | 20–100 | $15–$80 |
+| Mid-market | 100–500 | $80–$300+ |
+
+Table stakes (all tiers): auto-scoring, ASR, sentiment, QA dashboards — current build covers these.
+Premium (gated): CRM integration, custom scoring weights, customer priority, generative coaching.

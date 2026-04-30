@@ -2,6 +2,8 @@
 
 > Ultra-compact context. Paste this into Qwen/Gemini instead of full CONTEXT.md.
 > Every rule here is enforced in production code. Violations break the pipeline.
+> Project has pivoted to B2B SaaS (April 30, 2026). See [[30_SaaS_Pivot_Plan]].
+> Azure B2s decommissioned April 2026. All services run locally via docker-compose.yml.
 
 ---
 
@@ -10,7 +12,8 @@
 Backend: FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
 AI: WhisperX large-v2 + Pyannote.audio 3.1 + Presidio (extended) + Groq llama-3.3-70b-versatile
 Frontend: React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand
-Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
+Infra: Docker Compose (single machine, all 8 services) + Flower 2.0
+Cloud: Cloud-agnostic — Docker Compose deploys unchanged to any provider
 
 ## Column Names (exact — never deviate)
 
@@ -44,7 +47,7 @@ Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 - `pii_redacted = TRUE` before `run_groq_inference` runs (gate enforced in task)
 - JWT → Zustand sessionStorage, never localStorage
 
-## Scoring Formula (weights invariant)
+## Scoring Formula (weights are default — per-tenant override allowed via tenants.settings JSONB)
 
 ```python
 sentiment_delta_normalized = (sentiment_delta + 1.0) / 2.0
@@ -52,6 +55,15 @@ agent_score = (0.25 * politeness + 0.20 * sentiment_delta_normalized +
                0.20 * resolution + 0.15 * talk_balance + 0.20 * clarity)
 display_score = round(agent_score * 10, 2)  # stored 0-10, shown ×10 as % in UI
 ```
+
+## Multi-Tenancy Invariants (Phase 5+)
+
+- All tenant-scoped tables carry `tenant_id UUID NOT NULL`
+- PostgreSQL RLS: `FORCE ROW LEVEL SECURITY` on every tenant-scoped table
+- Session variable: `SET LOCAL app.current_tenant = :id` — LOCAL not SESSION
+- `contextvars.ContextVar` for async tenant identity propagation — never thread-local
+- MinIO paths: `{tenant_id}/{call_id}.mp3` — prefix isolation, not bucket-per-tenant
+- JWT carries `tenant_id` claim — injected at login, validated on every request
 
 ## LLM Config
 
@@ -71,14 +83,18 @@ display_score = round(agent_score * 10, 2)  # stored 0-10, shown ×10 as % in UI
 ## Banned Tools
 
 Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, raw transcript in DB,
-audio blob in DB, Node.js backend, generic Celery pool (use named queues only)
+audio blob in DB, Node.js backend, generic Celery pool (use named queues only),
+SET SESSION for tenant context (use SET LOCAL only)
 
 ## Code Style
 
 Zero comments — ever. Self-documenting code only. Complete files, no partial snippets.
 
-## Current State (v1.4)
+## Current State (v1.4 — post-FYP demo, pre-SaaS build)
 
-Azure B2s: 20.228.184.111 (always-on). Local RTX 3060 Ti via SSH tunnel (GPU inference).
-200 seeded calls. Pipeline verified: billing_dispute 88.3%, tech_support 88.2%.
+All services run locally on RTX 3060 Ti machine via docker-compose.yml.
+Azure B2s (20.228.184.111) decommissioned — cloud credits exhausted.
+SSH tunnel and hybrid architecture archived — no longer in use.
+200 seeded calls in local DB. Pipeline verified: billing_dispute 88.3%, tech_support 88.2%.
+Pivot: B2B SaaS — see [[30_SaaS_Pivot_Plan]] for full feature roadmap.
 Repo: github.com/Malik-Adeen/call-quality-analytics

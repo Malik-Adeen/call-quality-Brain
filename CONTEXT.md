@@ -9,8 +9,8 @@
 ## 1. Who is Building This
 
 **Adeen** — Final Year student, BSCS, Bahria University Islamabad, Pakistan.
-This is his Final Year Project (FYP), not just a demo. The system will be extended
-and maintained beyond the initial university presentation.
+This began as his Final Year Project (FYP). The FYP demo was completed in April 2026.
+The project is now being built out as a **B2B SaaS product** for call center analytics.
 
 **Hardware:**
 - CPU: AMD Ryzen 5 3600
@@ -82,7 +82,7 @@ Every upload triggers this exact sequence. No stage can be skipped. Stage 3 is a
 | 6 | `write_scores` | `io_queue` | Atomic PostgreSQL transaction — all metrics written together |
 | 7 | `notify_websocket` | `io_queue` | `call_complete` event → connected browser clients |
 
-### 3.3 Scoring Formula (invariant — never modify weights)
+### 3.3 Scoring Formula (default weights — per-tenant override allowed in Phase 5+)
 
 ```python
 sentiment_delta_normalized = (sentiment_delta + 1.0) / 2.0
@@ -134,6 +134,7 @@ These rules exist for security, correctness, and reproducibility. Never violate 
 10. **Score display**: backend stores 0–10, UI multiplies by 10 to show percentage.
 11. **Zero code comments** — ever. Self-documenting code only.
 12. **Banned tools**: Ollama, VADER, WeasyPrint, localStorage for JWT, Node.js backend.
+13. **Multi-tenancy (Phase 5+)**: `SET LOCAL app.current_tenant` per transaction. Never `SET SESSION`.
 
 ---
 
@@ -143,11 +144,16 @@ Full schema: [[02_Database_Schema]]
 
 | Table | Key Columns |
 |---|---|
-| `users` | id, name, email, password_hash, role (ADMIN/SUPERVISOR/VIEWER) |
-| `agents` | id, name, team |
-| `calls` | id, agent_id, minio_audio_path, transcript_redacted, score, status, pii_redacted |
+| `tenants` | id, name, slug, plan_tier, settings JSONB — **Phase 5** |
+| `users` | id, tenant_id, name, email, password_hash, role (PLATFORM_ADMIN/TENANT_ADMIN/SUPERVISOR/VIEWER) |
+| `agents` | id, tenant_id, name, team, external_id, is_active — **Phase 6** |
+| `calls` | id, tenant_id, agent_id, minio_audio_path, transcript_redacted, score, status, pii_redacted, needs_agent_review — **Phase 7** |
 | `call_metrics` | id, call_id, politeness_score, sentiment_delta, resolution_score, talk_balance_score, clarity_score |
 | `sentiment_timeline` | id, call_id, timestamp_seconds, sentiment_value |
+| `tenant_integrations` | id, tenant_id, integration_type, access_token, refresh_token — **Phase 8** |
+| `customers` | id, tenant_id, external_crm_id, name, crm_tier — **Phase 8** |
+
+> Tables marked Phase 5/6/7/8 do not exist yet. Current schema is single-tenant — see [[02_Database_Schema]].
 
 ---
 
@@ -168,7 +174,7 @@ Key endpoints:
 
 ---
 
-## 8. Current Build State — v1.4
+## 8. Current Build State — v1.4 (FYP Demo Complete)
 
 | Component | Status |
 |---|---|
@@ -194,15 +200,17 @@ Key endpoints:
 
 ---
 
-## 10. Future Roadmap
+## 10. Roadmap (B2B SaaS)
 
-See [[ROADMAP]] for full FYP phase planning and research directions.
+See [[ROADMAP]] for full phase planning. See [[30_SaaS_Pivot_Plan]] for research-backed feature specs.
 
-Phase 5: Urdu/English code-switched ASR — see [[06_Urdu_ASR_Research]]
-Phase 6: Real-time streaming transcription
-Phase 7: Advanced analytics and automated coaching reports
-Phase 8: Multi-tenancy
-Phase 9: Mobile supervisor app
+Phase 5: Multi-tenancy (PostgreSQL RLS, tenant table, JWT tenant claim, MinIO prefix isolation)
+Phase 6: Agent integration (roster sync API, external_id, soft-delete)
+Phase 7: Agent identity extraction from audio (Groq transcript parse, fuzzy name match)
+Phase 8: CRM integration (Zendesk first, adapter pattern, customer table)
+Phase 9: High / low priority customers (priority scoring, DB trigger, dashboard surfacing)
+
+Dropped: Urdu/English ASR fine-tuning — see [[06_Urdu_ASR_Research]] (historical only)
 
 ---
 

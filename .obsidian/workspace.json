@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "a34042f398406dfd",
+        "id": "6123dc2fb3f03dd9",
         "type": "tabs",
         "children": [
           {
-            "id": "8ce15fb1f04fb726",
+            "id": "459ed04b8208edab",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ]
@@ -49,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:#phase-1",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -188,8 +188,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "8ce15fb1f04fb726",
+  "active": "7bb516cf493fe4ed",
   "lastOpenFiles": [
+    "21_UI_Redesign_Postmortem.md",
     "29_Session_Handoff_2026-04-29.md",
     "22_Session_Handoff.md",
     "28_WhisperX_Debug_System.md",
@@ -206,7 +207,6 @@
     "ROADMAP.md",
     "23_Phase4_Postmortem.md",
     "11_Azure_Deployment.md",
-    "21_UI_Redesign_Postmortem.md",
     "19_Future_Transcript_Audio_Sync.md",
     "20_New_Design_System.md",
     "13_Phase2_E2E_Postmortem.md",
