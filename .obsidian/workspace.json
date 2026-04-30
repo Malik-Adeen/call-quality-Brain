@@ -11,10 +11,14 @@
             "id": "459ed04b8208edab",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "33_SaaS_Implementation_Plan.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "33_SaaS_Implementation_Plan"
             }
           }
         ]
@@ -188,8 +192,10 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "7bb516cf493fe4ed",
+  "active": "459ed04b8208edab",
   "lastOpenFiles": [
+    "33_SaaS_Implementation_Plan.md",
+    "32_Windows_Reinstall_Backup_Guide.md",
     "21_UI_Redesign_Postmortem.md",
     "29_Session_Handoff_2026-04-29.md",
     "22_Session_Handoff.md",
@@ -214,8 +220,6 @@
     "17_Phase3_Frontend.md",
     "16_Phase3A_Read_Endpoints.md",
     "15_Design_System.md",
-    "14_Audit_Fixes.md",
-    "11_Phase2.3_Postmortem.md",
     "00_Master_Dashboard.md.tmp.9512.1775890726660"
   ]
 }
