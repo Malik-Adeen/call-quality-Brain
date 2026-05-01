@@ -154,8 +154,18 @@ After JWT — paste both files here for review before running.
 
 **Fix if it fails:** Change every task signature to accept `tenant_id: str` as an explicit last argument and pass it through the chain. This is the fallback. Do not preemptively change it — test first.
 
+### Security Fixes Applied (end of Phase 5 session)
+- WebSocket `broadcast()` now tenant-scoped — filters by `tenant_id` stored at connect time
+- WebSocket `websocket_endpoint` now validates `tenant_id` claim, closes 4001 if missing
+- `notify_websocket` Celery task passes `tenant_id` to `broadcast()`
+- `ALLOW_LEGACY_TOKENS` default changed `"true"` → `"false"`
+- `uuid.UUID(user_id)` wrapped in try/except → clean 401 instead of 500
+- `infra/config.txt` purged from git history via `filter-branch`
+- All leaked keys rotated: Groq, OpenRouter, HF token (set to read), JWT secret
+- `infra/config.txt` and `infra/*.txt` added to `.gitignore`
+
 ### Next Session — Start Here
-**Phase 5 is COMPLETE.** Start Phase 6 — Agent Integration.
+**Phase 5 is COMPLETE. Open a new chat for Phase 6.** Start Phase 6 — Agent Integration.
 - Migration 005: add `external_id`, `is_active`, `email` columns to agents table
 - `POST /agents/sync` bulk upsert endpoint
 - Test a real upload to verify Celery header propagation (flag in Known Risk above)
