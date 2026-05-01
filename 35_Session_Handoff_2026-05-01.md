@@ -155,7 +155,10 @@ After JWT — paste both files here for review before running.
 **Fix if it fails:** Change every task signature to accept `tenant_id: str` as an explicit last argument and pass it through the chain. This is the fallback. Do not preemptively change it — test first.
 
 ### Next Session — Start Here
-`POST /platform/tenants` endpoint, then `FORCE ROW LEVEL SECURITY` migration. After those, test a real upload to verify Celery header propagation.
+**Phase 5 is COMPLETE.** Start Phase 6 — Agent Integration.
+- Migration 005: add `external_id`, `is_active`, `email` columns to agents table
+- `POST /agents/sync` bulk upsert endpoint
+- Test a real upload to verify Celery header propagation (flag in Known Risk above)
 
 ---
 
