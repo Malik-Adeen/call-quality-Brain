@@ -2,7 +2,7 @@
 tags: [moc, dashboard]
 status: active
 created: 2026-04-11
-updated: 2026-05-01
+updated: 2026-05-01 (session 2)
 ---
 
 # 00 — Master Dashboard
@@ -48,7 +48,7 @@ updated: 2026-05-01
 | Audio | 5 real call recordings verified | ✅ | [[26_Audio_Testing_Postmortem]] |
 | PII+ | Extended Presidio recognizers | ✅ | [[27_Presidio_Extension_Postmortem]] |
 | **Phase 5 — DB** | **Migrations 001–003: tenants table, tenant_id, RLS** | ✅ | [[35_Session_Handoff_2026-05-01]] |
-| **Phase 5 — Auth** | **JWT tenant_id claim + ContextVar middleware** | 🔄 Next | [[34_Final_Implementation_Plan]] |
+| **Phase 5 — Auth** | **JWT tenant_id claim + ContextVar middleware** | ✅ | [[34_Final_Implementation_Plan]] |
 | **Phase 5 — Workers** | **Celery tenant injection + MinIO path change** | 🔲 | [[34_Final_Implementation_Plan]] |
 | **Phase 6** | **Agent Integration (roster sync)** | 🔲 | [[33_SaaS_Implementation_Plan]] |
 | **Phase 7** | **Agent Identity Extraction from Audio** | 🔲 | [[33_SaaS_Implementation_Plan]] |
@@ -63,15 +63,15 @@ updated: 2026-05-01
 [x] Migration 001 — tenants table
 [x] Migration 002 — tenant_id on all 5 tables (backfill + NOT NULL + FK + index)
 [x] Migration 003 — RLS policies + role update (ADMIN → TENANT_ADMIN)
-[ ] jwt.py — add tenant_id param to create_access_token
-[ ] dependencies.py — validate tenant_id in get_current_user, set request.state.tenant_id
-[ ] auth.py router — pass tenant_id to create_access_token on login
-[ ] database.py — get_db_with_tenant() dependency (SET LOCAL per transaction)
-[ ] main.py — tenant middleware registration
+[x] jwt.py — add tenant_id param to create_access_token
+[x] dependencies.py — validate tenant_id in get_current_user, set request.state.tenant_id
+[x] auth.py router — pass tenant_id to create_access_token on login
+[x] database.py — get_db_with_tenant() dependency (SET LOCAL per transaction)
+[x] main.py — tenant middleware registration
 [ ] tasks.py — SET LOCAL at start of every Celery task
 [ ] celery_app.py — add extract_agent_identity to routes (Phase 7 prep)
 [ ] MinIO path — change to {tenant_id}/{call_id}.mp3
-[ ] orm.py — add Tenant model + tenant_id FK to all 5 ORM models
+[x] orm.py — add Tenant model + tenant_id FK to all 5 ORM models
 [ ] POST /platform/tenants — new endpoint (PLATFORM_ADMIN only)
 [ ] FORCE ROW LEVEL SECURITY — add after middleware is verified working
 [ ] reset_and_seed.py — make tenant-aware

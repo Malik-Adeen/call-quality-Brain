@@ -126,6 +126,39 @@ After JWT — paste both files here for review before running.
 
 ---
 
+---
+
+## Session 2 — 2026-05-01 (Auth Chain)
+
+### What Was Done
+
+| File | Change |
+|---|---|
+| `backend/app/auth/jwt.py` | Added `tenant_id: str | None` param to `create_access_token`, injected into payload |
+| `backend/app/auth/dependencies.py` | Added `request: Request`, tenant mismatch validation, legacy token gate, `request.state.tenant_id` on all paths |
+| `backend/app/routers/auth.py` | Fixed `create_access_token` call — was missing `tenant_id` arg (found during smoke test) |
+| `backend/app/database.py` | Added `tenant_context` ContextVar + `get_db_with_tenant()` dependency (reads `request.state.tenant_id`, executes `SET LOCAL`) |
+| `backend/app/main.py` | Removed broken `inject_tenant_context` middleware (middleware runs before dependencies — would never have seen `request.state.tenant_id`) |
+| `backend/app/models/orm.py` | Added `Tenant` model + `tenant_id UUID NOT NULL FK` to all 5 ORM models |
+
+### Bug Caught During Review
+- `database.py` first generated with ContextVar middleware in `main.py` — middleware fires before JWT dependency so `request.state.tenant_id` is always None at that point. Fixed: `get_db_with_tenant` reads `request.state` directly via `request: Request` parameter.
+
+### Smoke Test Results (all passed ✅)
+- `POST /auth/login` → 200, token contains `tenant_id` UUID + role `TENANT_ADMIN`
+- `GET /calls` with token → 200, 201 calls returned (RLS scoped to demo tenant)
+- `GET /calls` without token → 401 Not authenticated
+
+### Known Risk — Celery Chain Header Propagation
+`apply_async(headers=...)` is confirmed to set headers on the first task (`run_whisperx`) only. Celery 5.x does NOT guarantee custom header propagation to downstream chain tasks. All 6 tasks read `self.request.headers.get("tenant_id")` — tasks 2–6 may get `None` and raise ValueError when a real upload is processed.
+
+**Fix if it fails:** Change every task signature to accept `tenant_id: str` as an explicit last argument and pass it through the chain. This is the fallback. Do not preemptively change it — test first.
+
+### Next Session — Start Here
+`POST /platform/tenants` endpoint, then `FORCE ROW LEVEL SECURITY` migration. After those, test a real upload to verify Celery header propagation.
+
+---
+
 ## My Role
 
 I do not write code. I review every file Codex/Copilot generates before it runs.
