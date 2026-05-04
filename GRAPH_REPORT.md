@@ -1,16 +1,16 @@
 # GRAPH REPORT — AI Call Quality Analytics System
-Generated: 2026-04-29 21:39 | Run `python scripts/build_graph.py` to update
+Generated: 2026-05-03 11:11 | Run `python scripts/build_graph.py` to update
 
 ---
 
 ## GOD NODES (highest connectivity)
 
-- app.database (imported by 7 files)
-- app.models.orm (imported by 6 files)
+- app.database (imported by 8 files)
+- app.models.orm (imported by 7 files)
+- app.auth.dependencies (imported by 5 files)
 - app.config (imported by 4 files)
-- app.auth.dependencies (imported by 4 files)
-- app.auth.jwt (imported by 3 files)
-- Celery tasks: run_whisperx, redact_pii, compute_talk_balance, run_groq_inference, write_scores, notify_websocket
+- app.schemas.api (imported by 4 files)
+- Celery tasks: run_whisperx, extract_agent_identity, redact_pii, compute_talk_balance, run_groq_inference, write_scores, notify_websocket
 - tasks.py → central hub: run_whisperx→redact_pii→compute_talk_balance→run_groq_inference→write_scores→notify_websocket
 - presidio_service.py → PII gate: 10 entity types, 3 custom recognizers (ZIP/SSN-last4/ACCOUNT)
 - llm_client.py → inference: Groq primary → OpenRouter fallback (429/503 only)
@@ -86,23 +86,24 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
 
 ---
 
-## BACKEND FILES (25 python files)
+## BACKEND FILES (26 python files)
 
   config.py: cls:[Settings,Config]
   database.py: fns:[build_async_url,build_sync_url] cls:[Base]
   dependencies.py: fns:[require_role]
   jwt.py: fns:[create_access_token,decode_access_token]
-  orm.py: cls:[User,Agent]
-  tasks.py: tasks:[run_whisperx,redact_pii,compute_talk_balance,run_groq_inference,write_scores,notify_websocket]
-  agents.py: cls:[AgentOut,ScorePoint]
+  orm.py: cls:[Tenant,User]
+  tasks.py: tasks:[run_whisperx,extract_agent_identity,redact_pii,compute_talk_balance,run_groq_inference,write_scores,notify_websocket]
+  agents.py: cls:[AgentSyncItem,AgentSyncRequest]
   calls.py: fns:[_score_float,_call_to_summary]
+  platform.py: cls:[TenantCreateRequest,TenantOut]
   reports.py: fns:[build_metrics_rows,build_transcript_html,build_report_html] cls:[ExportRequest]
   ws.py: fns:[__init__,disconnect] cls:[ConnectionManager]
   api.py: cls:[ApiError,ApiResponse]
   llm_client.py: fns:[_cache_key,_call_provider,run_inference,validate_zero_to_one] cls:[InferenceResult]
   minio_client.py: fns:[__init__,ensure_bucket_exists,upload_audio,download_file] cls:[MinioClient]
   presidio_service.py: fns:[redact_text]
-  whisper_service.py: fns:[_remap_speakers,transcribe_and_diarize]
+  whisper_service.py: fns:[_remap_speakers,_cuda_cleanup,transcribe_and_diarize]
 
 ---
 
@@ -125,9 +126,9 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
 
 ---
 
-## VAULT (44 docs)
+## VAULT (54 docs)
 
-  00_Master_Dashboard.md: 00 — Master Dashboard | Project Identity | Build State — v1.4
+  00_Master_Dashboard.md: 00 — Master Dashboard | Project Identity | Build State — v1.6 (Phase 6 Complete, Pipeline E2E Verifi
   01_Master_Architecture.md: 01 — Master Architecture & Stack Manifest | 1. System Identity | 2. Mandated Tech Stack
   03_API_Contract.md: 03 — API & WebSocket Contract | Global Response Envelope | POST /auth/login
   04_Demo_Execution_Plan.md: 04 — Demo Execution Plan | How to Use This Document | Phase 0 — Local Infrastructure Setup
@@ -156,15 +157,25 @@ Fonts: Inter body, JetBrains Mono data, Playfair Display italic headers
   27_Presidio_Extension_Postmortem.md: 27 — Presidio Extension Postmortem | What Was Built | New Recognizers Added
   28_WhisperX_Debug_System.md: WhisperX Self-Improving Debug System — Architecture Spec | 1. Project Summary | 2. Core Architecture
   29_Session_Handoff_2026-04-29.md: Session Handoff — 2026-04-29 | System State: v1.4 — DEMO READY | What Was Done This Session
+  30_SaaS_Pivot_Plan.md: 30 — B2B SaaS Pivot Plan | Pivot Declaration | Features Roadmap (in implementation order)
+  31_Session_Handoff_2026-04-30.md: 31 — Session Handoff — 2026-04-30 | What Happened This Session | Current System State
+  32_Windows_Reinstall_Backup_Guide.md: 32 — Windows Reinstall Backup Guide | What Is Safe (N drive — do nothing) | What Will Be Lost (C dri
+  33_SaaS_Implementation_Plan.md: 33 — SaaS Implementation Plan (Confirmed Scope) | Confirmed Scope (3 Phases) | Phase 5 — Multi-Tenan
+  34_Final_Implementation_Plan.md: 34 — Final Implementation Plan (Research-Complete) | How We Work | Phase 5 — Multi-Tenancy
+  35_Session_Handoff_2026-05-01.md: 35 — Session Handoff 2026-05-01 | What Was Done This Session | Exact State Right Now
+  36_Session_Handoff_2026-05-02.md: 36 — Session Handoff 2026-05-02 | What Was Done This Session | Exact State Right Now
+  37_Phase7_Postmortem.md: 37 — Phase 7 Postmortem: Agent Identity Extraction | What Was Built | Bugs Caught in Review (pre-run
+  38_Session_Handoff_2026-05-02.md: 38 — Session Handoff 2026-05-02 (Phase 7 Backend Complete) | Current State — v1.7 | How to Start the
+  39_Frontend_Session_Prompt.md: 39 — Phase 7 Frontend Session Prompt | Skills to Activate (type `/` in Claude Desktop) | Context Blo
   CODEBASE_MAP.md: CODEBASE MAP | Pipeline Flow | Backend God Nodes
   CONTEXT.md: PROJECT CONTEXT — AI Call Quality & Agent Performance Analytics System | 1. Who is Building This | 2
   GRAPH_REPORT.md: GRAPH REPORT — AI Call Quality Analytics System | GOD NODES (highest connectivity) | PIPELINE (seque
   GRAPH_REPORT_LINK.md: GRAPH_REPORT — see N:\projects\docs\GRAPH_REPORT.md | tags: [graph, knowledge-graph, token-efficienc
   INVARIANTS.md: INVARIANTS — AI Call Quality Analytics System | Stack (frozen — no deviations) | Column Names (exact
-  LOG.md: LOG — Daily Session Notes | 2026-04-17 — v1.4 complete. Azure B2s deployed. Hybrid SSH tunnel verifi
+  LOG.md: LOG — Daily Session Notes | 2026-05-02 — Phase 7 backend complete. Migration 006 applied locally (ag
   PROJECT_ROADMAP_1.md: AI Call Quality & Agent Performance Analytics System | Project Master Roadmap & Architectural Specif
   PROMPTING_GUIDE.md: PROMPTING_GUIDE — AI Call Quality Analytics System | 1. Model Routing Matrix | 2. The Rules Block (p
-  ROADMAP.md: ROADMAP — AI Call Quality & Agent Performance Analytics System | Completed Phases | Planned Phases
+  ROADMAP.md: ROADMAP — AI Call Quality & Agent Performance Analytics System | Completed Phases | Planned Phases (
   STARTUP_HYBRID.md: STARTUP — Hybrid Mode (Azure B2s + Local RTX 3060 Ti) | Prerequisites | Critical Warning
   STARTUP_LOCAL.md: STARTUP — Local Mode (All Services on Local Machine) | Prerequisites | Critical Warning
   demo-readiness.md: Demo Readiness — 2026-04-19 | System Status | Pre-Demo Checklist (run in order)

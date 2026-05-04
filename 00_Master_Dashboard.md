@@ -2,7 +2,7 @@
 tags: [moc, dashboard]
 status: active
 created: 2026-04-11
-updated: 2026-05-01 (session 2)
+updated: 2026-05-03 (session 5)
 ---
 
 # 00 — Master Dashboard
@@ -29,7 +29,7 @@ updated: 2026-05-01 (session 2)
 
 ---
 
-## Build State — v1.5 (Phase 5 DB Layer Complete)
+## Build State — v1.7 (Phase 7 Complete, UI Polish Pass Done)
 
 | Phase | Description | Status | Notes |
 |---|---|---|---|
@@ -47,34 +47,47 @@ updated: 2026-05-01 (session 2)
 | Hybrid | SSH tunnel + WAN Celery tuning | ✅ (Azure deleted) | [[24_Hybrid_Architecture_Postmortem]] |
 | Audio | 5 real call recordings verified | ✅ | [[26_Audio_Testing_Postmortem]] |
 | PII+ | Extended Presidio recognizers | ✅ | [[27_Presidio_Extension_Postmortem]] |
-| **Phase 5 — DB** | **Migrations 001–003: tenants table, tenant_id, RLS** | ✅ | [[35_Session_Handoff_2026-05-01]] |
-| **Phase 5 — Auth** | **JWT tenant_id claim + ContextVar middleware** | ✅ | [[34_Final_Implementation_Plan]] |
-| **Phase 5 — Workers** | **Celery tenant injection + MinIO path change** | 🔲 | [[34_Final_Implementation_Plan]] |
-| **Phase 6** | **Agent Integration (roster sync)** | 🔲 | [[33_SaaS_Implementation_Plan]] |
-| **Phase 7** | **Agent Identity Extraction from Audio** | 🔲 | [[33_SaaS_Implementation_Plan]] |
+| Phase 5 — DB | Migrations 001–004: tenants, tenant_id, RLS, FORCE RLS | ✅ | [[35_Session_Handoff_2026-05-01]] |
+| Phase 5 — Auth | JWT tenant_id claim + ContextVar middleware | ✅ | [[35_Session_Handoff_2026-05-01]] |
+| Phase 5 — Workers | Celery explicit tenant_id arg — all 6 tasks | ✅ | [[36_Session_Handoff_2026-05-02]] |
+| Phase 6 | Agent Integration — Migration 005, POST /agents/sync, GET /agents | ✅ | [[36_Session_Handoff_2026-05-02]] |
+| **Phase 7** | **Agent Identity Extraction from Audio** | ✅ | [[37_Phase7_Postmortem]] |
+| **UI Polish** | **Login, Sidebar, Agents, Reports, Upload, CallDetail, CallList** | ✅ | [[40_Session_Handoff_2026-05-03]] |
 | Phase 8 | CRM Integration — DEFERRED | ⏸ | [[30_SaaS_Pivot_Plan]] |
 | Phase 9 | High / Low Priority Customers — DEFERRED | ⏸ | [[30_SaaS_Pivot_Plan]] |
 
 ---
 
-## Phase 5 Detailed Checklist
+## Phase 7 Checklist (complete)
 
 ```
-[x] Migration 001 — tenants table
-[x] Migration 002 — tenant_id on all 5 tables (backfill + NOT NULL + FK + index)
-[x] Migration 003 — RLS policies + role update (ADMIN → TENANT_ADMIN)
-[x] jwt.py — add tenant_id param to create_access_token
-[x] dependencies.py — validate tenant_id in get_current_user, set request.state.tenant_id
-[x] auth.py router — pass tenant_id to create_access_token on login
-[x] database.py — get_db_with_tenant() dependency (SET LOCAL per transaction)
-[x] main.py — tenant middleware registration
-[ ] tasks.py — SET LOCAL at start of every Celery task
-[ ] celery_app.py — add extract_agent_identity to routes (Phase 7 prep)
-[ ] MinIO path — change to {tenant_id}/{call_id}.mp3
-[x] orm.py — add Tenant model + tenant_id FK to all 5 ORM models
-[ ] POST /platform/tenants — new endpoint (PLATFORM_ADMIN only)
-[ ] FORCE ROW LEVEL SECURITY — add after middleware is verified working
-[ ] reset_and_seed.py — make tenant-aware
+[x] Migration 006 — agent_id nullable, needs_agent_review, agent_name_extracted, external_agent_id on calls
+[x] orm.py — Call model updated with 4 new columns
+[x] tasks.py — extract_agent_identity task live in pipeline chain
+[x] Pipeline order fix — extract_agent_identity runs BEFORE redact_pii (raw text)
+[x] _remap_speakers bug fixed — else "CUSTOMER" → else "AGENT"
+[x] PATCH /calls/{id}/assign-agent endpoint
+[x] Upload form — agent optional, external_agent_id field
+[x] CallList — Needs Review badge, null agent handling
+[x] CallDetailPanel — manual assign control, agent_name_extracted parsed (no raw JSON)
+[x] Vite proxy fixed — localhost:8000 (was pointing at deleted Azure VM)
+[x] FORCE RLS removed from users table (login fix)
+[x] reset_and_seed.py — tenant_id throughout, upsert users, idempotent
+[x] E2E verified — Sarah Chen auto-identified and assigned from audio
+```
+
+## UI Polish Checklist (complete)
+
+```
+[x] Login — shadow card, show/hide password, focus rings, error box styling
+[x] Sidebar — narrowed to 176px, coloured initials avatar, green active accent bar, LogOut icon
+[x] Agents — deterministic coloured avatars, box-shadow card lift, trend arrows, coloured strengths panel
+[x] Overview — no changes (charts preserved exactly)
+[x] CallList — Needs Review badge, Unassigned italic, null-safe filter, onCallUpdated prop
+[x] CallDetailPanel — agent_name_extracted pill (name + confidence colour), amber assign control
+[x] Reports — offset shadow card, WS status pill, null agent handling, export spinner
+[x] UploadCall — drag-and-drop zone, file size display, shadow card, focus rings
+[x] App.tsx — sidebar margin corrected (176px), header simplified
 ```
 
 ---
@@ -86,10 +99,39 @@ updated: 2026-05-01 (session 2)
 | 001 Create tenants | `20260501_create_tenants` | ✅ Applied |
 | 002 Add tenant_id | `20260501_add_tenant_id` | ✅ Applied |
 | 003 RLS + roles | `20260501_enable_rls` | ✅ Applied |
+| 004 FORCE RLS | `20260501_force_rls` | ✅ Applied |
+| 005 Agent sync columns | `20260601_add_agent_sync_columns` | ✅ Applied |
+| 006 Agent identity extraction | `20260701_agent_identity` | ✅ Applied |
 
-Current head: `20260501_enable_rls`
+Current head: `20260701_agent_identity`
 
-Run migrations: `cd backend && alembic upgrade head`
+> ⚠️ Revision IDs must be ≤32 characters — alembic_version.version_num is VARCHAR(32)
+
+---
+
+## Known Issues / Workarounds
+
+| Issue | Workaround | Fix |
+|---|---|---|
+| gTTS test audio — all speakers labelled AGENT | Use real phone recordings | Pyannote can't separate synthetic TTS voices |
+| Talk Balance 0% on gTTS audio | Same — real audio needed | gTTS is mono, one speaker detected |
+| users table FORCE RLS blocks login | `ALTER TABLE users NO FORCE ROW LEVEL SECURITY` — applied | Auth router bypasses RLS as table owner |
+| PC crashes after 2-3 uploads | .wslconfig memory cap + TDR registry fix | WSL2 memory unbounded; NVIDIA TDR timeout |
+| Call List no auto-refresh after processing | Navigate away and back | WebSocket update only on Reports page |
+
+---
+
+## Startup Runbook
+
+All services run locally. Hybrid/Azure runbooks are historical — Azure VM deleted.
+
+```powershell
+cd N:\projects\call-quality-analytics\infra
+docker compose up -d
+cd N:\projects\call-quality-analytics\frontend && npm run dev
+```
+
+Login: admin@callquality.demo / admin1234
 
 ---
 
@@ -100,62 +142,8 @@ Run migrations: `cd backend && alembic upgrade head`
 | `GRAPH_REPORT.md` via filesystem | ~1,100 | Claude reads directly — no paste needed |
 | `INVARIANTS.md` paste | ~500 | For Qwen/Gemini sessions |
 | `CONTEXT.md` paste | ~2,500 | Full architecture for complex decisions |
-| Full vault paste | ~30,000 | Gemini 1.5 Pro only (free, 1M context) |
 
 Update graph after code changes: `python scripts/build_graph.py`
-
----
-
-## Startup Runbook
-
-All services run locally. Hybrid/Azure runbooks are historical — Azure VM deleted.
-
-```
-docker compose -f infra/docker-compose.yml up -d
-```
-
-GPU worker runs in the same compose stack locally (no SSH tunnel needed).
-
----
-
-## How Claude Works In This Project
-
-- **Codex / Copilot** writes all code
-- **Claude** reviews every generated file before it runs — checks against checklists in [[34_Final_Implementation_Plan]]
-- **Workflow:** generate → paste to Claude → review → approve/fix → run
-- Claude does NOT generate implementation code directly
-
----
-
-## Architecture (current — all local)
-
-```
-Browser → Vite dev server → FastAPI (local Docker)
-                                ↕ Celery queues (local Redis)
-                           Local RTX 3060 Ti (worker_gpu · WhisperX large-v2)
-                           Local PostgreSQL + MinIO (Docker)
-```
-
-Full spec: [[01_Master_Architecture]] · GPU: [[10_GPU_Infrastructure]]
-
----
-
-## Critical Invariants (full list: [[INVARIANTS]])
-
-1. Audio → `minio_audio_path`, never PostgreSQL
-2. Raw transcript → never DB, Presidio-redacted only
-3. `pii_redacted=TRUE` before `run_groq_inference`
-4. `run_whisperx` → `gpu_queue`, concurrency=1
-5. JWT → sessionStorage, never localStorage
-6. Groq: `llama-3.3-70b-versatile`
-7. MinIO: `cq-minio:9000` (hyphens, never underscores)
-8. Score: stored 0–10, displayed ×10 as %
-9. Zero code comments
-10. `SET LOCAL app.current_tenant` per transaction — never `SET SESSION`
-11. `current_setting('app.current_tenant', true)` — `true` arg mandatory
-12. `ContextVar` for async tenant propagation — never `threading.local()`
-13. FastAPI → `postgresql+asyncpg://` | Celery workers → `postgresql://` (psycopg2)
-14. `expire_on_commit=False` on async session factory
 
 ---
 
@@ -164,18 +152,12 @@ Full spec: [[01_Master_Architecture]] · GPU: [[10_GPU_Infrastructure]]
 | File | Purpose |
 |---|---|
 | [[GRAPH_REPORT]] | Auto-generated knowledge graph |
-| [[CONTEXT]] | Universal LLM context — paste into any chat |
+| [[CONTEXT]] | Universal LLM context |
 | [[INVARIANTS]] | 500-token rules block |
 | [[ROADMAP]] | B2B SaaS phase planning |
-| [[30_SaaS_Pivot_Plan]] | Pivot declaration, feature specs, research |
-| [[33_SaaS_Implementation_Plan]] | Confirmed scope (Phase 5→6→7) with checklists |
-| [[34_Final_Implementation_Plan]] | Research-complete implementation plan + review checklists |
-| [[35_Session_Handoff_2026-05-01]] | Last session handoff — start here |
-| [[32_Windows_Reinstall_Backup_Guide]] | Pre-reinstall backup checklist |
-| [[STARTUP_LOCAL]] | All-local Docker startup runbook |
+| [[40_Session_Handoff_2026-05-03]] | Last session handoff — start here |
+| [[38_Session_Handoff_2026-05-02]] | Previous session (Phase 7 backend) |
+| [[34_Final_Implementation_Plan]] | Research-complete implementation plan |
 | [[01_Master_Architecture]] | Stack manifest, pipeline, scoring formula |
-| [[02_Database_Schema]] | PostgreSQL schema (pre-Phase 5 baseline) |
 | [[03_API_Contract]] | All endpoint shapes + TypeScript interfaces |
-| [[10_GPU_Infrastructure]] | CUDA, Docker, cache paths |
 | [[20_New_Design_System]] | Light parchment design tokens |
-| [[06_Urdu_ASR_Research]] | Historical — dropped scope |

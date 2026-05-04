@@ -1,135 +1,157 @@
 ---
-tags: [planning, saas, roadmap]
-date: 2026-04-30
+tags: [planning, roadmap]
+date: 2026-05-03
 status: active
 ---
 
-# ROADMAP — AI Call Quality & Agent Performance Analytics System
+# ROADMAP — AI Call Quality & Agent Performance Analytics
 
-> B2B SaaS product roadmap. Project has transitioned from FYP demo to commercial product.
-> See [[00_Master_Dashboard]] for current build state.
-> See [[30_SaaS_Pivot_Plan]] for full pivot analysis, research findings, and implementation details.
+> Updated post architecture review (DeepSeek/GLM/Kimi/Opus — May 2026).
+> See doc 41 for full review synthesis.
+> Development workflow: Claude audits + writes prompts. Codex/Copilot generates code.
 
 ---
 
 ## Completed Phases
 
 ### Phase 1 — Foundation
-[[07_Phase1_Postmortem]]
-7-service Docker stack. JWT auth. MinIO audio upload. Celery queue isolation.
+7-service Docker stack. JWT auth. MinIO upload. Celery queue isolation. [[07_Phase1_Postmortem]]
 
 ### Phase 2 — AI Pipeline
-[[08_Phase2.1_Postmortem]] · [[09_Phase2.2_Postmortem]] · [[11_Phase2.3_Postmortem]] · [[12_Phase2.4_Postmortem]] · [[13_Phase2_E2E_Postmortem]]
-WhisperX + Pyannote diarization. Presidio PII gate. Groq inference. Atomic scoring. WebSocket.
+WhisperX + Pyannote. Presidio PII gate. Groq inference. Atomic scoring. WebSocket. [[13_Phase2_E2E_Postmortem]]
 
 ### Phase 3 — React Dashboard
-[[16_Phase3A_Read_Endpoints]] · [[17_Phase3_Frontend]] · [[21_UI_Redesign_Postmortem]]
-6 pages. Light parchment design system. Recharts. Slide-in panels.
+6 pages. Recharts. Slide-in panels. PDF export. [[21_UI_Redesign_Postmortem]]
 
 ### Phase 4 — Production Hardening
-[[23_Phase4_Postmortem]] · [[24_Hybrid_Architecture_Postmortem]] · [[26_Audio_Testing_Postmortem]] · [[27_Presidio_Extension_Postmortem]]
-Playwright PDF. Azure B2s. SSH tunnel hybrid architecture. Extended Presidio PII.
-
----
-
-## Planned Phases (B2B SaaS)
-
-> Full analysis for all phases in [[30_SaaS_Pivot_Plan]].
+Playwright PDF. Azure B2s (now deleted). SSH tunnel. Extended Presidio PII. [[23_Phase4_Postmortem]]
 
 ### Phase 5 — Multi-Tenancy
-**Goal:** Convert single-tenant system to isolated multi-tenant SaaS.
-
-Architecture decision: Shared tables + PostgreSQL Row-Level Security (not schema-per-tenant — catalog bloat at scale kills Alembic migration speed).
-
-Tasks:
-- New `tenants` table with `settings JSONB` for per-tenant config
-- Add `tenant_id UUID NOT NULL` to all tenant-scoped tables
-- PostgreSQL RLS policies with `FORCE ROW LEVEL SECURITY`
-- JWT gets `tenant_id` claim at login — all requests auto-scoped
-- `SET LOCAL app.current_tenant` per transaction (not SET SESSION)
-- `contextvars.ContextVar` in FastAPI for async-safe propagation
-- MinIO paths: `{tenant_id}/{call_id}.mp3` (currently flat)
-- `PLATFORM_ADMIN` role above `TENANT_ADMIN`
-- Tenant signup / onboarding flow
+Migrations 001–004: tenants, tenant_id, RLS, FORCE RLS. JWT tenant_id claim. Celery explicit tenant_id. [[35_Session_Handoff_2026-05-01]]
 
 ### Phase 6 — Agent Integration
-**Goal:** Live agent roster sync from HR/workforce systems instead of manual seed data.
+Migration 005. POST /agents/sync. GET /agents. AgentListItem schema. [[36_Session_Handoff_2026-05-02]]
 
-Tasks:
-- Add `external_id TEXT`, `is_active BOOLEAN`, `email TEXT` to `agents` table
-- `POST /agents/sync` — bulk upsert by `external_id` within tenant (idempotent)
-- Soft-delete support for departed agents
+### Phase 7 — Agent Identity Extraction
+Migration 006. extract_agent_identity task. PATCH /assign-agent. Needs Review badge. Pipeline order fix (identity before redaction). [[37_Phase7_Postmortem]]
 
-### Phase 7 — Agent Identity Extraction from Audio
-**Goal:** Automatically resolve `agent_id` from transcript — eliminate manual dropdown on upload.
-
-Decision: Groq API transcript parsing (zero VRAM, already in pipeline). No local LLM (OOM risk). No voice biometrics (GDPR Article 9).
-
-Tasks:
-- Add name extraction pass in `run_groq_inference`: prompt Groq to extract agent self-introduction
-- Fuzzy-match extracted name against `agents` table for the tenant
-- Add `needs_agent_review BOOLEAN`, `agent_name_extracted TEXT` to `calls` table
-- Make `agent_id` nullable on upload — auto-resolve post-transcription
-- Dashboard "Needs Review" flag for unresolved calls
-
-### Phase 8 — CRM Integration
-**Goal:** Pull customer data at upload; push quality scores back to CRM after scoring.
-
-Priority: Zendesk first (28% call center market share), Salesforce second, HubSpot third.
-
-Tasks:
-- Abstract `CRMAdapter` base class + `ZendeskAdapter` implementation
-- New `tenant_integrations` table (OAuth tokens, encrypted)
-- New `customers` table (CRM-synced customer data cached locally)
-- Add `customer_id`, `customer_tier` to `calls` table
-- `sync_crm_customer` Celery task — runs at upload time
-- `push_score_to_crm` Celery task — runs after `write_scores`
-- `POST /webhooks/crm/{crm_type}` — HMAC-validated webhook receiver
-
-### Phase 9 — High / Low Priority Customers
-**Goal:** Surface high-value customer calls prominently; alert supervisors on risk calls.
-
-Formula (adapted from NICE CXone Dynamic Delivery):
-```
-Base Priority = (0.35 × tier_score) + (0.40 × severity_score) + (0.15 × fcr_failure_score) + (0.10 × frequency_score)
-Dynamic Priority = Base Priority + (wait_seconds × tier_acceleration_rate)
-```
-
-Tasks:
-- Add `customer_priority TEXT`, `base_priority_score NUMERIC` to `calls` table
-- PostgreSQL trigger computes base priority on INSERT
-- Overview dashboard re-sorts "Requires Attention" panel by priority × agent score
-- Call list priority badge column
+### UI Polish Pass (May 2026)
+Login shadow card. Sidebar tenant pill + coloured avatar. Agents coloured cards. Reports WS pill. Upload drag-drop. CallDetail assign control. Tenant isolation verified (Demo + Acme Corp). [[40_Session_Handoff_2026-05-03]]
 
 ---
 
-## Dropped Scope
+## Active — Phase 8: MVP Hardening
 
-### ~~Phase 5 — Urdu/English Code-Switched ASR~~
-**Dropped.** No code was written. Research archived at [[06_Urdu_ASR_Research]].
-Project has pivoted to B2B SaaS. ASR quality improvements are a future premium feature once tenant call data is available for fine-tuning.
+### Phase 8A — Architecture Review Fixes (1 session)
+**Source:** Doc 41 — Architecture Review Synthesis
+
+- [ ] Fix `compute_talk_balance` → `1 - 2 * abs(agent_ratio - 0.5)`
+- [ ] Add Redis AOF persistence (`--appendonly yes --appendfsync everysec`)
+- [ ] Add upsert guards in `write_scores` (delete then insert, idempotent on retry)
+- [ ] Verify `write_scores` delete-before-insert already in place
+- [ ] LLM score variance test (run same call 20x, measure spread)
+
+### Phase 8B — UI Redesign (2–3 sessions)
+Notion/Intercom aesthetic. Dark/light mode. Indigo #6366F1 accent. Dark sidebar always.
+Inter font only (drop Playfair, JetBrains Mono from UI chrome).
+Dark/light toggle in top-right header.
+
+**Load before starting:** ckmui-styling skill + ui-ux-pro-max skill
+
+Pages to redesign: Login, Sidebar, App layout, Overview, CallList, CallDetail, Agents, Reports, UploadCall
+
+### Phase 8C — Register Page + POST /auth/register (1 session)
+Self-serve company signup → creates tenant + admin user in one transaction.
+
+Backend: `POST /auth/register` → INSERT tenants → INSERT users (TENANT_ADMIN role)
+Frontend: `Register.tsx` with company name, email, password
+
+### Phase 8D — Agent Management GUI (1 session)
+Full CRUD for agents via dashboard. Currently agents only via sync API.
+
+Backend: `POST /agents` (create), `PATCH /agents/:id` (edit), `DELETE /agents/:id` (deactivate)
+Frontend: `AgentManagement.tsx` — table with add/edit/deactivate
+
+### Phase 8E — User Management GUI (1 session)
+TENANT_ADMIN invites supervisors and viewers.
+
+Backend: `GET /users`, `POST /users/invite`, `DELETE /users/:id`
+Frontend: `UserManagement.tsx` — list users, invite form, deactivate
+
+### Phase 8F — Batch Upload Agent (1–2 sessions)
+Sandboxed Docker watchdog container. Read-only volume mount.
+
+Architecture (post-Kimi review):
+- SHA-256 checksum sent with upload (API = source of truth, not SQLite)
+- asyncio semaphore for 3–5 concurrent uploads
+- Adaptive backoff on 429/503
+- inotify/watchdog for filesystem events
+- Health endpoint on :8080
+
+Frontend: `BatchAgent.tsx` — configure path, set agent, start/stop, live feed
 
 ---
 
-## Deferred Phases
+## Phase 9 — First Customer (parallel with 8B–8F)
 
-### Real-Time Streaming Transcription
-WebSocket audio chunk receiver. WhisperX streaming mode (2-second chunk inference). Live transcript word-by-word. Post Phase 9.
+**The ROI Blind Spot Report** (Opus + Kimi: build this before any new features)
 
-### Advanced Analytics
-30/60/90 day trend charts. Team comparison. Automated weekly PDF coaching reports. Issue category clustering. Post Phase 9.
+1. Get 50 real call recordings from a local BPO (NDA, free)
+2. Process overnight via pipeline
+3. Build one-page report: "Your QA process caught X of these 5 worst calls. Here's what happened on the other Y."
+4. Present in person. Ask for 30-day paid pilot at $15–20/agent/month.
 
-### Mobile Supervisor App
-React Native. Push notifications for low-scoring calls. Mobile call detail view. Post Phase 9.
+This is not a feature — it's a sales motion. Assign a timebox to it.
 
 ---
 
-## Pricing Reference
+## Phase 10 — Urdu/English ASR (post-revenue)
 
-| Tier | Agents | Per-agent/month |
+**Approach revised post architecture review (GLM recommendation):**
+
+Instead of QLoRA fine-tuning WhisperX:
+1. **Language Identification (LID) router** at segment level (fastText)
+2. Pure English segments → standard WhisperX large-v2
+3. Pure Urdu segments → dedicated Urdu ASR model
+4. Code-switched segments → Meta SeamlessM4T
+
+QLoRA fine-tuning deferred until:
+- 50+ hours of transcribed code-switched BPO audio available
+- At least one paying South Asian BPO customer
+
+---
+
+## Phase 11 — Real-Time Streaming Transcription
+
+WebSocket audio chunk receiver. WhisperX streaming. Live transcript word-by-word.
+**Requires:** Stable customer base first. Not for MVP.
+
+---
+
+## Deferred / Cancelled
+
+| Item | Status | Reason |
 |---|---|---|
-| SMB | 20–100 | $15–$80 |
-| Mid-market | 100–500 | $80–$300+ |
+| Azure B2s deployment | Cancelled | Credits exhausted. All-local Docker. |
+| QLoRA Whisper fine-tuning (near-term) | Deferred | No training data, no customers. Use SeamlessM4T instead. |
+| CRM integration | Deferred | Post-first-customer |
+| Priority customer scoring | Deferred | Post-first-customer |
+| Mobile supervisor app | Deferred | Post-revenue |
 
-Table stakes (all tiers): auto-scoring, ASR, sentiment, QA dashboards — current build covers these.
-Premium (gated): CRM integration, custom scoring weights, customer priority, generative coaching.
+---
+
+## Architecture Review Findings — Impact on Roadmap
+
+From doc 41 (May 2026 review):
+
+| Finding | Impact |
+|---|---|
+| Talk balance formula wrong | Fixed in Phase 8A |
+| Pipeline not idempotent | Fixed in Phase 8A |
+| Redis no persistence | Fixed in Phase 8A |
+| Scoring weights hardcoded | Backlog — post first customer |
+| LLM variance untested | Run test in Phase 8A |
+| Presidio misses South Asian PII | Backlog — before EU expansion |
+| No human-in-the-loop | Backlog — Phase 9+ |
+| Celery chain brittle | Accepted for now — major rework post-revenue |
+| Price too low ($5–10) | Operational decision — price at $15–20 |

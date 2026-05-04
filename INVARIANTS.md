@@ -1,9 +1,7 @@
 # INVARIANTS — AI Call Quality Analytics System
 
-> Ultra-compact context. Paste this into Qwen/Gemini instead of full CONTEXT.md.
+> Ultra-compact context. Paste this into Qwen/Gemini/DeepSeek instead of full CONTEXT.md.
 > Every rule here is enforced in production code. Violations break the pipeline.
-> Project has pivoted to B2B SaaS (April 30, 2026). See [[30_SaaS_Pivot_Plan]].
-> Azure B2s decommissioned April 2026. All services run locally via docker-compose.yml.
 
 ---
 
@@ -12,8 +10,7 @@
 Backend: FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
 AI: WhisperX large-v2 + Pyannote.audio 3.1 + Presidio (extended) + Groq llama-3.3-70b-versatile
 Frontend: React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand
-Infra: Docker Compose (single machine, all 8 services) + Flower 2.0
-Cloud: Cloud-agnostic — Docker Compose deploys unchanged to any provider
+Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 
 ## Column Names (exact — never deviate)
 
@@ -47,7 +44,15 @@ Cloud: Cloud-agnostic — Docker Compose deploys unchanged to any provider
 - `pii_redacted = TRUE` before `run_groq_inference` runs (gate enforced in task)
 - JWT → Zustand sessionStorage, never localStorage
 
-## Scoring Formula (weights are default — per-tenant override allowed via tenants.settings JSONB)
+## Pipeline Chain Order (invariant — do not reorder)
+
+```
+run_whisperx → extract_agent_identity → redact_pii → compute_talk_balance → run_groq_inference → write_scores → notify_websocket
+```
+
+extract_agent_identity MUST run before redact_pii — agent names are redacted as <PERSON> by Presidio.
+
+## Scoring Formula (weights invariant)
 
 ```python
 sentiment_delta_normalized = (sentiment_delta + 1.0) / 2.0
@@ -56,14 +61,16 @@ agent_score = (0.25 * politeness + 0.20 * sentiment_delta_normalized +
 display_score = round(agent_score * 10, 2)  # stored 0-10, shown ×10 as % in UI
 ```
 
-## Multi-Tenancy Invariants (Phase 5+)
+## Talk Balance Formula (corrected — architecture review finding May 2026)
 
-- All tenant-scoped tables carry `tenant_id UUID NOT NULL`
-- PostgreSQL RLS: `FORCE ROW LEVEL SECURITY` on every tenant-scoped table
-- Session variable: `SET LOCAL app.current_tenant = :id` — LOCAL not SESSION
-- `contextvars.ContextVar` for async tenant identity propagation — never thread-local
-- MinIO paths: `{tenant_id}/{call_id}.mp3` — prefix isolation, not bucket-per-tenant
-- JWT carries `tenant_id` claim — injected at login, validated on every request
+```python
+agent_words = sum word count of AGENT segments
+customer_words = sum word count of CUSTOMER segments
+total_words = agent_words + customer_words
+agent_ratio = agent_words / total_words if total_words > 0 else 0.5
+talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
+# Perfect balance (50/50) = 1.0. Any imbalance reduces score. Agent talking 100% = 0.0.
+```
 
 ## LLM Config
 
@@ -83,18 +90,22 @@ display_score = round(agent_score * 10, 2)  # stored 0-10, shown ×10 as % in UI
 ## Banned Tools
 
 Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, raw transcript in DB,
-audio blob in DB, Node.js backend, generic Celery pool (use named queues only),
-SET SESSION for tenant context (use SET LOCAL only)
+audio blob in DB, Node.js backend, generic Celery pool (use named queues only)
 
 ## Code Style
 
 Zero comments — ever. Self-documenting code only. Complete files, no partial snippets.
 
-## Current State (v1.4 — post-FYP demo, pre-SaaS build)
+## Development Workflow
 
-All services run locally on RTX 3060 Ti machine via docker-compose.yml.
-Azure B2s (20.228.184.111) decommissioned — cloud credits exhausted.
-SSH tunnel and hybrid architecture archived — no longer in use.
-200 seeded calls in local DB. Pipeline verified: billing_dispute 88.3%, tech_support 88.2%.
-Pivot: B2B SaaS — see [[30_SaaS_Pivot_Plan]] for full feature roadmap.
+Claude = auditor and prompt writer. Codex/Copilot = code generator.
+Claude writes Codex prompts. Claude audits generated code against these invariants.
+Claude does not generate production code — conserves tokens, maintains quality.
+
+## Current State (v1.7)
+
+All local Docker. Pipeline verified: billing_dispute 88.3%.
+Multi-tenancy: triple-layer RLS live. Two tenants verified isolated.
+Architecture reviews done (DeepSeek/GLM/Kimi/Opus May 2026) — see doc 41.
 Repo: github.com/Malik-Adeen/call-quality-analytics
+Vault: N:\projects\docs
