@@ -1,0 +1,5 @@
+.obsidian/
+.tmp.driveupload/
+graph_cache.json
+repo_snapshot.xml
+*.xml

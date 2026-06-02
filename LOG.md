@@ -8,14 +8,42 @@ tags: [log]
 
 ---
 
-2026-05-03 (session 2) — Architecture reviews done (DeepSeek/GLM/Kimi/Opus). Key findings: talk_balance formula wrong, pipeline not idempotent, Redis no AOF, pricing should be $15-20 not $5-10, build ROI blind-spot report before new features, South Asia = relationship sales not self-serve. Workflow formalised: Claude=auditor+prompt writer, Codex/Copilot=code generator. Research report PDF generated (Perplexity+GPT+Gemini+Manus). Tenant isolation live (Demo+Acme). Vault updated: docs 41, 42, INVARIANTS, WORKFLOW, ROADMAP. Handoff: doc 42.
+2026-05-25 (session 6) — Azure deployment prep. frontend/Dockerfile (multi-stage Node→nginx), infra/nginx.conf (SPA routing + /api/ + /ws/ proxy), infra/docker-compose.prod.yml (no dev mounts, nginx service, .env.prod), backend/Dockerfile fixed twice (DNS bug → timeout bug → local wheel install via Invoke-WebRequest). .env.prod created. Currently blocked on en_core_web_lg-3.8.0-py3-none-any.whl (400MB) download finishing. Next: build passes → local smoke test (localhost loads, login, /api/, WebSocket) → .env.prod secrets rotation → Azure VM provisioned Canada Central ports 80/443 → deploy. Handoff: doc 63.
 
-2026-05-03 — Phase 7 frontend complete + E2E verified (Sarah Chen auto-assigned). Pipeline order fix (identity before PII). Login fixed (FORCE RLS + Vite proxy). Full UI polish: Login shadow card, coloured agent avatars, Sidebar accent bar, drag-drop upload, Reports WS pill, CallDetail JSON→pill. _remap_speakers bug fixed. reset_and_seed.py rewritten for multi-tenancy. .wslconfig + TDR fix for PC crashes. Gemini tasked with finding real call audio. Handoff: doc 40.
+2026-05-25 (session 5) — PLATFORM_ADMIN UI + backend complete. 5 pages via Figma AI → Antigravity: PlatformOverview, Tenants, SystemHealth, UsageAnalytics, CallMonitor. 5 backend endpoints (overview, system-health, usage, calls, calls/{id}). RLS bypass migration 008 (app.platform_bypass). get_db_platform dependency. Windows Docker sync delay hit twice — fixed with docker compose cp. Three data bugs fixed: score double-multiply, Usage blank crash (resolution_pct mismatch), SystemHealth OFFLINE (workers.gpu structure). Status dot bug fixed. All 5 pages verified. Build clean. Committed. Handoff: doc 63.
 
-2026-05-02 — Phase 7 backend complete. Migration 006 applied locally (agent_id nullable, needs_agent_review, agent_name_extracted, external_agent_id). extract_agent_identity task live. 5 bugs caught in review pre-run. C drive 0GB incident — hibernation disabled, caches cleared, full reboot required. Notion supervisor dashboard created. Frontend remaining: Needs Review badge, manual assign, upload form.
+2026-05-25 (session 4) — UI audit (P0+P1) complete. All fixes committed. Handoff: doc 63.
 
-2026-04-29 — Sea-level dashboard live. UploadResponse + radar sentiment fix applied. GPT audit cross-verified. WhisperX debug system designed (doc 28).
+2026-05-25 (session 3) — Pre-Azure security audit. 9 real findings. P0 fixes committed.
 
-2026-04-19 — UI audit complete. Sea-level dashboard live (6 panels). Agents page hardened. CallList/CallDetailPanel polished. PASS verdict. 2 major issues (non-blocking): Evaluated-at label, minCalls=5 filter.
+2026-05-25 (session 2) — Multi-LLM synthesis. pytest skeleton (5 files).
 
-2026-04-18 — Final session on Pro account. Built custom knowledge graph builder (scripts/build_graph.py). Outputs GRAPH_REPORT.md. Added STARTUP_HYBRID.md + STARTUP_LOCAL.md. PROMPTING_GUIDE.md + INVARIANTS.md for multi-LLM workflow.
+2026-05-25 — Manager laptop branch deleted. Blackwell Dockerfile written then killed.
+
+2026-05-18 — MinIO webhook model live. Batch agent removed. E2E verified: score 9.18.
+
+2026-05-13 (session 4) — Doc 56 fixes. CI written. Pushed.
+
+2026-05-13 (session 3) — WebSocket toast + CallList auto-refresh fixed.
+
+2026-05-13 (session 2) — Multi-LLM repo audit. 15 findings.
+
+2026-05-13 — PC crash recovery. Pipeline confirmed.
+
+2026-05-10 — Dark mode. TenantManagement. Azure Canada Central locked.
+
+2026-05-09 — BatchAgent multi-tenant rewrite.
+
+2026-05-08 — Windows reinstall. Claude Code installed.
+
+2026-05-06 — v1.8 complete. Waaqi GRC design migration.
+
+2026-05-03 — Architecture reviews. Phase 7 E2E verified.
+
+2026-05-02 — Phase 7 backend complete.
+
+2026-04-29 — Sea-level dashboard live.
+
+2026-04-19 — UI audit complete. PASS.
+
+2026-04-18 — Knowledge graph builder built.

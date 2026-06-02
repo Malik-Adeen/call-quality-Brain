@@ -7,10 +7,11 @@
 
 ## Stack (frozen — no deviations)
 
-Backend: FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
+Backend: FastAPI + Celery 5.x + Redis 7.4-alpine + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
+Auth: PyJWT>=2.8.0 + slowapi (rate limiting) — never python-jose (CVE-2024-33664)
 AI: WhisperX large-v2 + Pyannote.audio 3.1 + Presidio (extended) + Groq llama-3.3-70b-versatile
-Frontend: React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand
-Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
+Frontend: React 19 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + motion/react ^12.40.0
+Infra: Docker Compose (dev: + Flower 2.0) (prod: + nginx)
 
 ## Column Names (exact — never deviate)
 
@@ -43,6 +44,12 @@ Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 - Raw transcripts → never DB, Presidio-redacted only
 - `pii_redacted = TRUE` before `run_groq_inference` runs (gate enforced in task)
 - JWT → Zustand sessionStorage, never localStorage
+- MinIO bucket: never anonymous. Presigned URLs only (1hr expiry).
+- JWT_SECRET: no default fallback. Fails loudly on startup if unset.
+- REDIS_URL must include REDIS_PASSWORD (format: redis://:password@cq_redis:6379/0)
+- MinIO webhook auth failure → always return HTTP 200 (prevents infinite retry)
+- Platform admin endpoints → get_db_platform dependency only
+- SET LOCAL app.platform_bypass = 'true' — never remove from RLS policies
 
 ## Pipeline Chain Order (invariant — do not reorder)
 
@@ -51,6 +58,12 @@ run_whisperx → extract_agent_identity → redact_pii → compute_talk_balance 
 ```
 
 extract_agent_identity MUST run before redact_pii — agent names are redacted as <PERSON> by Presidio.
+
+## WebSocket Architecture
+
+notify_websocket publishes to Redis channel ws:broadcast:{tenant_id}.
+FastAPI redis_subscriber (started via lifespan) receives and calls manager.broadcast().
+Never call manager.broadcast() directly from a Celery task — wrong process, empty connections.
 
 ## Scoring Formula (weights invariant)
 
@@ -77,6 +90,7 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
 - Groq primary: `llama-3.3-70b-versatile` (3.1 is deprecated — 400 error)
 - OpenRouter fallback: `meta-llama/llama-3.3-70b-instruct`
 - Fallback triggers: HTTP 429 or 503 from Groq only
+- No in-process inference cache — LLM results are never cached
 
 ## GPU / Dockerfile Rules
 
@@ -85,12 +99,32 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
 - PyTorch: `torch==2.2.0+cu121` — index URL `https://download.pytorch.org/whl/cu121`
 - `numpy<2` must be the LAST pip install step — pyannote pulls numpy>=2 as transitive dep
 - Package: `nvidia-ml-py` — never `pynvml` (renamed)
-- Cache mounts: `C:\Users\adeen\.cache\huggingface` + `C:\Users\adeen\.cache\torch`
+- Cache mounts: `E:\projects\model-cache\huggingface` + `E:\projects\model-cache\torch`
+- spaCy wheel: en_core_web_lg-3.8.0-py3-none-any.whl must be COPYed locally (DNS timeout in Docker build)
+
+## Multi-Tenancy / RLS
+
+- All tables (except tenants) have FORCE ROW LEVEL SECURITY
+- Regular endpoints: get_db_with_tenant → SET LOCAL app.current_tenant = '{tenant_id}'
+- Platform admin endpoints: get_db_platform → SET LOCAL app.platform_bypass = 'true'
+- Migration 008 adds bypass condition to all 5 RLS policies
+- write_scores DELETE scoped by call_id AND tenant_id (not just call_id)
+
+## Alembic Head
+
+20260526_platform_rls_bypass (migration 008)
+Run migrations: docker compose exec api alembic upgrade head
+Never run alembic on host Python — always inside cq_api container.
+
+## Windows Docker Sync Delay
+
+New files written to host may not appear in containers immediately.
+Fix: docker compose cp ..\backend\<path>\<file> api:/app/<path>/<file>
 
 ## Banned Tools
 
 Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, raw transcript in DB,
-audio blob in DB, Node.js backend, generic Celery pool (use named queues only)
+audio blob in DB, Node.js backend, generic Celery pool, python-jose
 
 ## Code Style
 
@@ -98,14 +132,23 @@ Zero comments — ever. Self-documenting code only. Complete files, no partial s
 
 ## Development Workflow
 
-Claude = auditor and prompt writer. Codex/Copilot = code generator.
-Claude writes Codex prompts. Claude audits generated code against these invariants.
-Claude does not generate production code — conserves tokens, maintains quality.
+Claude.ai = architect, auditor, prompt writer.
+Claude Code = code executor and file editor.
+Antigravity (Gemini) = React component generation.
+Paste errors to Claude.ai for diagnosis before any fix attempt.
 
-## Current State (v1.7)
+## Upload Model (MinIO Webhook — no BatchAgent)
 
-All local Docker. Pipeline verified: billing_dispute 88.3%.
-Multi-tenancy: triple-layer RLS live. Two tenants verified isolated.
-Architecture reviews done (DeepSeek/GLM/Kimi/Opus May 2026) — see doc 41.
+Files land in MinIO via mc mirror --watch (Dropbox model).
+MinIO fires POST /internal/minio-event → FastAPI creates Call row → Celery chain fires.
+No batch agent, no polling, no SQLite manifest.
+
+## Current State (v1.9)
+
+All local Docker. Pipeline verified. Multi-tenancy RLS live (migrations 001-008).
+PLATFORM_ADMIN dashboard: 5 pages live (Overview, Tenants, SystemHealth, UsageAnalytics, CallMonitor).
+Prod deployment files written: frontend/Dockerfile, infra/nginx.conf, infra/docker-compose.prod.yml.
+spaCy wheel (400MB) downloaded locally for Docker build.
+Next: prod build → smoke test → secrets rotation → Azure Canada Central VM → deploy.
 Repo: github.com/Malik-Adeen/call-quality-analytics
-Vault: N:\projects\docs
+Vault: E:\projects\docs
