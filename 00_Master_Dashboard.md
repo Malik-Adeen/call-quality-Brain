@@ -2,14 +2,14 @@
 tags: [moc, dashboard]
 status: active
 created: 2026-04-11
-updated: 2026-05-03 (session 5)
+updated: 2026-05-26 (session 10)
 ---
 
 # 00 — Master Dashboard
 
 > Single entry point for the entire knowledge vault.
 > Read this first at the start of any working session.
-> For LLM sessions: Claude reads [[GRAPH_REPORT]] via filesystem (fastest) or paste [[INVARIANTS]] (500 tokens).
+> For LLM sessions: paste [[CONTEXT]] or [[INVARIANTS]] (500 tokens).
 
 ---
 
@@ -21,74 +21,39 @@ updated: 2026-05-03 (session 5)
 | Type | B2B SaaS product (pivoted from FYP — April 30, 2026) |
 | Builder | Malik Adeen — BSCS, Bahria University Islamabad |
 | Repo | https://github.com/Malik-Adeen/call-quality-analytics |
-| Local path | N:\projects\call-quality-analytics |
-| Vault | N:\projects\docs |
-| Cloud | None — Azure resources deleted (credits exhausted). Building cloud-agnostic locally. |
+| Local path | E:\projects\call-quality-analytics |
+| Vault | E:\projects\docs |
+| Cloud | Azure Canada Central — deployment in progress |
 | FYP demo | Completed — week of April 21, 2026 |
-| Instructor confirmed | Phase 5 → 6 → 7. CRM + Priority deferred. (2026-04-30) |
 
 ---
 
-## Build State — v1.7 (Phase 7 Complete, UI Polish Pass Done)
+## Build State — v1.9
 
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | 1 | Foundation — Auth, Upload, Docker, Celery | ✅ | [[07_Phase1_Postmortem]] |
-| 2.1 | WhisperX GPU + Pyannote diarization | ✅ | [[08_Phase2.1_Postmortem]] |
-| 2.2 | Presidio PII redaction gate | ✅ | [[09_Phase2.2_Postmortem]] |
-| 2.3 | Groq LLM inference | ✅ | [[11_Phase2.3_Postmortem]] |
-| 2.4 | Scoring + chain + WebSocket | ✅ | [[12_Phase2.4_Postmortem]] |
-| 2 E2E | Full pipeline end-to-end verified | ✅ | [[13_Phase2_E2E_Postmortem]] |
-| Audit | Security fixes | ✅ | [[14_Audit_Fixes]] |
-| 3A | Backend read endpoints | ✅ | [[16_Phase3A_Read_Endpoints]] |
-| 3 | React dashboard — 6 pages | ✅ | [[17_Phase3_Frontend]] |
-| UI | Light parchment redesign | ✅ | [[21_UI_Redesign_Postmortem]] |
-| 4 | PDF + Azure B2s + Hybrid SSH tunnel | ✅ (Azure deleted) | [[23_Phase4_Postmortem]] |
-| Hybrid | SSH tunnel + WAN Celery tuning | ✅ (Azure deleted) | [[24_Hybrid_Architecture_Postmortem]] |
-| Audio | 5 real call recordings verified | ✅ | [[26_Audio_Testing_Postmortem]] |
-| PII+ | Extended Presidio recognizers | ✅ | [[27_Presidio_Extension_Postmortem]] |
-| Phase 5 — DB | Migrations 001–004: tenants, tenant_id, RLS, FORCE RLS | ✅ | [[35_Session_Handoff_2026-05-01]] |
-| Phase 5 — Auth | JWT tenant_id claim + ContextVar middleware | ✅ | [[35_Session_Handoff_2026-05-01]] |
-| Phase 5 — Workers | Celery explicit tenant_id arg — all 6 tasks | ✅ | [[36_Session_Handoff_2026-05-02]] |
-| Phase 6 | Agent Integration — Migration 005, POST /agents/sync, GET /agents | ✅ | [[36_Session_Handoff_2026-05-02]] |
-| **Phase 7** | **Agent Identity Extraction from Audio** | ✅ | [[37_Phase7_Postmortem]] |
-| **UI Polish** | **Login, Sidebar, Agents, Reports, Upload, CallDetail, CallList** | ✅ | [[40_Session_Handoff_2026-05-03]] |
-| Phase 8 | CRM Integration — DEFERRED | ⏸ | [[30_SaaS_Pivot_Plan]] |
-| Phase 9 | High / Low Priority Customers — DEFERRED | ⏸ | [[30_SaaS_Pivot_Plan]] |
-
----
-
-## Phase 7 Checklist (complete)
-
-```
-[x] Migration 006 — agent_id nullable, needs_agent_review, agent_name_extracted, external_agent_id on calls
-[x] orm.py — Call model updated with 4 new columns
-[x] tasks.py — extract_agent_identity task live in pipeline chain
-[x] Pipeline order fix — extract_agent_identity runs BEFORE redact_pii (raw text)
-[x] _remap_speakers bug fixed — else "CUSTOMER" → else "AGENT"
-[x] PATCH /calls/{id}/assign-agent endpoint
-[x] Upload form — agent optional, external_agent_id field
-[x] CallList — Needs Review badge, null agent handling
-[x] CallDetailPanel — manual assign control, agent_name_extracted parsed (no raw JSON)
-[x] Vite proxy fixed — localhost:8000 (was pointing at deleted Azure VM)
-[x] FORCE RLS removed from users table (login fix)
-[x] reset_and_seed.py — tenant_id throughout, upsert users, idempotent
-[x] E2E verified — Sarah Chen auto-identified and assigned from audio
-```
-
-## UI Polish Checklist (complete)
-
-```
-[x] Login — shadow card, show/hide password, focus rings, error box styling
-[x] Sidebar — narrowed to 176px, coloured initials avatar, green active accent bar, LogOut icon
-[x] Agents — deterministic coloured avatars, box-shadow card lift, trend arrows, coloured strengths panel
-[x] Overview — no changes (charts preserved exactly)
-[x] CallList — Needs Review badge, Unassigned italic, null-safe filter, onCallUpdated prop
-[x] CallDetailPanel — agent_name_extracted pill (name + confidence colour), amber assign control
-[x] Reports — offset shadow card, WS status pill, null agent handling, export spinner
-[x] UploadCall — drag-and-drop zone, file size display, shadow card, focus rings
-[x] App.tsx — sidebar margin corrected (176px), header simplified
-```
+| 2 | AI Pipeline — WhisperX, Presidio, Groq, WebSocket | ✅ | [[13_Phase2_E2E_Postmortem]] |
+| 3 | React Dashboard — 6 pages | ✅ | [[17_Phase3_Frontend]] |
+| 4 | PDF export (Playwright) | ✅ | [[23_Phase4_Postmortem]] |
+| 5 | Multi-Tenancy — RLS, JWT tenant claim, Celery tenant_id | ✅ | [[35_Session_Handoff_2026-05-01]] |
+| 6 | Agent Integration — migration 005, /agents routes | ✅ | [[36_Session_Handoff_2026-05-02]] |
+| 7 | Agent Identity Extraction from audio | ✅ | [[37_Phase7_Postmortem]] |
+| 8A | Architecture review P0 fixes (talk balance, idempotency, Redis AOF) | ✅ | [[41_Architecture_Review_Synthesis]] |
+| 8B | Waaqi GRC UI redesign (14 files, dark mode, teal design system) | ✅ | [[44_Session_Handoff_Next]] |
+| 8C | Register page + POST /auth/register | ✅ | |
+| 8D | Agent Management GUI (CRUD) | ✅ | |
+| 8E | User Management GUI (invite, roles) | ✅ | |
+| 8F | MinIO webhook upload model (replaced BatchAgent) | ✅ | [[59_Session_Handoff_2026-05-18]] |
+| 8G | PLATFORM_ADMIN role + TenantManagement page | ✅ | |
+| 8H | Pre-Azure security audit — 9 findings fixed | ✅ | [[61_Pre_Azure_Security_Audit]] |
+| 8I | UI P0+P1 accessibility audit — contrast, fonts, dark mode | ✅ | |
+| 8J | PLATFORM_ADMIN dashboard — 5 pages (Figma AI → Antigravity) | ✅ | |
+| 8K | RLS bypass migration 008 — get_db_platform dependency | ✅ | |
+| 8L | Azure deployment prep — frontend/Dockerfile, nginx.conf, prod compose | ✅ | |
+| 9 | Azure Canada Central deploy | 🔄 In progress — build phase |
+| 10 | ROI reporting | 🔲 Post-Azure |
+| 11 | Agentic AI assistant (NL query layer) | 🔲 Post-Azure |
 
 ---
 
@@ -102,48 +67,100 @@ updated: 2026-05-03 (session 5)
 | 004 FORCE RLS | `20260501_force_rls` | ✅ Applied |
 | 005 Agent sync columns | `20260601_add_agent_sync_columns` | ✅ Applied |
 | 006 Agent identity extraction | `20260701_agent_identity` | ✅ Applied |
+| 007 Indexes + constraints | `20260513_indexes_and_constraints` | ✅ Applied |
+| 008 Platform RLS bypass | `20260526_platform_rls_bypass` | ✅ Applied |
 
-Current head: `20260701_agent_identity`
-
-> ⚠️ Revision IDs must be ≤32 characters — alembic_version.version_num is VARCHAR(32)
+**Current head:** `20260526_platform_rls_bypass` (migration 008)
 
 ---
 
-## Known Issues / Workarounds
+## Azure Deploy Checklist
 
-| Issue | Workaround | Fix |
+- [x] frontend/Dockerfile written (multi-stage Node → nginx)
+- [x] infra/nginx.conf written (SPA + /api/ + /ws/ proxy)
+- [x] infra/docker-compose.prod.yml written
+- [x] backend/Dockerfile fixed (spaCy local wheel, DNS timeout workaround)
+- [x] en_core_web_lg-3.8.0-py3-none-any.whl downloaded (400MB)
+- [x] .gitignore updated (.env.prod + *.whl protected)
+- [ ] Docker prod build passes cleanly
+- [ ] Local smoke test: http://localhost loads, login, /api/, WebSocket
+- [ ] .env.prod secrets rotation
+- [ ] platform@callquality.internal password rotated from platform1234
+- [ ] MinIO image pinned to real tag
+- [ ] Azure VM provisioned (Canada Central, ports 80/443)
+- [ ] docker compose -f docker-compose.prod.yml up -d on VM
+- [ ] E2E test on Azure: upload audio → score appears
+
+---
+
+## PLATFORM_ADMIN Pages (v1.9)
+
+| Route | Page | Status |
 |---|---|---|
-| gTTS test audio — all speakers labelled AGENT | Use real phone recordings | Pyannote can't separate synthetic TTS voices |
-| Talk Balance 0% on gTTS audio | Same — real audio needed | gTTS is mono, one speaker detected |
-| users table FORCE RLS blocks login | `ALTER TABLE users NO FORCE ROW LEVEL SECURITY` — applied | Auth router bypasses RLS as table owner |
-| PC crashes after 2-3 uploads | .wslconfig memory cap + TDR registry fix | WSL2 memory unbounded; NVIDIA TDR timeout |
-| Call List no auto-refresh after processing | Navigate away and back | WebSocket update only on Reports page |
+| /platform/overview | PlatformOverview.tsx | ✅ Live — shows KPIs, chart, infra status |
+| /tenants | TenantManagement.tsx | ✅ Live — create tenant, plan badges |
+| /platform/health | SystemHealth.tsx | ✅ Live — workers, queue depths, errors |
+| /platform/usage | UsageAnalytics.tsx | ✅ Live — per-tenant chart + summary |
+| /platform/calls | CallMonitor.tsx | ✅ Live — cross-tenant call list, 200 records |
+
+All use `get_db_platform` → `SET LOCAL app.platform_bypass = 'true'` (migration 008).
 
 ---
 
-## Startup Runbook
+## Design System — Waaqi GRC Tokens (v1.8+)
 
-All services run locally. Hybrid/Azure runbooks are historical — Azure VM deleted.
+Full spec: `WAAQI_TOKENS.md` at project root.
+
+| Token | Value | Usage |
+|---|---|---|
+| Primary | `#00a99d` | CTAs, active states, chart lines |
+| Sidebar bg | `#0f1924` | Dark navy |
+| Page bg | `#f5f6f8` | Off-white surface |
+| Text tertiary | `#6b778c` | WCAG AA 4.57:1 (fixed from #98a2b3) |
+| Success bg/text | `#d1fadf` / `#027a48` | Score badges >80% |
+| Error bg/text | `#fee4e2` / `#b42318` | Score badges <60% |
+
+TailwindCSS v4 custom spacing: `--spacing-46/50/54` for chart heights.
+
+---
+
+## Upload Model (MinIO Webhook)
+
+Files land in MinIO via mc mirror --watch (Dropbox model).
+MinIO fires POST /internal/minio-event → FastAPI creates Call row → Celery chain fires.
+**No BatchAgent. No polling. No SQLite manifest.**
+
+---
+
+## Seeded Accounts
+
+| Email | Password | Role | Notes |
+|---|---|---|---|
+| platform@callquality.internal | platform1234 | PLATFORM_ADMIN | ⚠️ Rotate before production |
+| admin@callquality.demo | admin1234 | TENANT_ADMIN | Demo tenant |
+| supervisor@callquality.demo | supervisor1234 | SUPERVISOR | Demo tenant |
+| viewer@callquality.demo | viewer1234 | VIEWER | Demo tenant |
+
+---
+
+## Startup (Dev)
 
 ```powershell
-cd N:\projects\call-quality-analytics\infra
+cd E:\projects\call-quality-analytics\infra
 docker compose up -d
-cd N:\projects\call-quality-analytics\frontend && npm run dev
+cd E:\projects\call-quality-analytics\frontend
+npm run dev
 ```
-
-Login: admin@callquality.demo / admin1234
 
 ---
 
-## LLM Context Loading (fastest to slowest)
+## LLM Context Loading
 
-| Method | Tokens | How |
+| Method | Tokens | When to use |
 |---|---|---|
-| `GRAPH_REPORT.md` via filesystem | ~1,100 | Claude reads directly — no paste needed |
-| `INVARIANTS.md` paste | ~500 | For Qwen/Gemini sessions |
-| `CONTEXT.md` paste | ~2,500 | Full architecture for complex decisions |
-
-Update graph after code changes: `python scripts/build_graph.py`
+| `INVARIANTS.md` paste | ~600 | Quick tasks, Qwen/Gemini |
+| `CONTEXT.md` paste | ~2,500 | New sessions, architecture decisions |
+| `LOG.md` paste | ~300 | Check what was done last session |
 
 ---
 
@@ -151,13 +168,10 @@ Update graph after code changes: `python scripts/build_graph.py`
 
 | File | Purpose |
 |---|---|
-| [[GRAPH_REPORT]] | Auto-generated knowledge graph |
-| [[CONTEXT]] | Universal LLM context |
-| [[INVARIANTS]] | 500-token rules block |
+| [[CONTEXT]] | Universal LLM session starter |
+| [[INVARIANTS]] | 600-token rules block |
+| [[LOG]] | One-line session history |
 | [[ROADMAP]] | B2B SaaS phase planning |
-| [[40_Session_Handoff_2026-05-03]] | Last session handoff — start here |
-| [[38_Session_Handoff_2026-05-02]] | Previous session (Phase 7 backend) |
-| [[34_Final_Implementation_Plan]] | Research-complete implementation plan |
-| [[01_Master_Architecture]] | Stack manifest, pipeline, scoring formula |
-| [[03_API_Contract]] | All endpoint shapes + TypeScript interfaces |
-| [[20_New_Design_System]] | Light parchment design tokens |
+| [[61_Pre_Azure_Security_Audit]] | Latest security audit findings |
+| [[41_Architecture_Review_Synthesis_2026-05-03]] | Multi-LLM architecture review |
+| [[WAAQI_TOKENS]] | Design token spec (at project root) |
