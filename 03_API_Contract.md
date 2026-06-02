@@ -426,3 +426,143 @@ export type WsEvent = WsCallComplete | WsPipelineError | WsProcessingUpdate
 
 ### Exemption Note
 The GET /health endpoint is exempt from the standard ApiResponse envelope. It returns a bare JSON object (e.g., {"status": "ok"}) to maintain compatibility with standard infrastructure health probes.
+
+---
+
+## POST /auth/register  ← v1.8
+
+**Request** — `application/json`
+```json
+{
+  "company_name": "Acme Call Centre",
+  "name": "Admin User",
+  "email": "admin@acme.com",
+  "password": "securepassword",
+  "confirm_password": "securepassword"
+}
+```
+
+Single transaction: creates Tenant → flush → creates TENANT_ADMIN User → returns JWT.
+Same response shape as POST /auth/login.
+
+**Error codes**
+| HTTP | code | Condition |
+|---|---|---|
+| 422 | `VALIDATION_ERROR` | Passwords don't match or length < 8 |
+| 409 | `EMAIL_TAKEN` | Email already registered |
+
+---
+
+## POST /agents  ← v1.8
+
+Requires: TENANT_ADMIN or SUPERVISOR.
+
+**Request**
+```json
+{ "name": "Sarah Chen", "team": "Support", "email": "sarah@co.com", "external_id": "EXT001" }
+```
+**Response 200** — AgentListItem
+
+---
+
+## PATCH /agents/{agent_id}  ← v1.8
+
+Applies only non-null fields.
+```json
+{ "name": "Sarah Chen", "team": "Billing", "is_active": true }
+```
+**Response 200** — AgentListItem
+
+---
+
+## DELETE /agents/{agent_id}  ← v1.8
+
+Soft deactivate: sets is_active=False. No hard delete.
+**Response 200** — AgentListItem (with is_active: false)
+
+---
+
+## GET /users  ← v1.8
+
+Requires: TENANT_ADMIN. Returns all users in current tenant ordered by name.
+**Response 200** — list[UserListItem]
+
+---
+
+## POST /users/invite  ← v1.8
+
+Requires: TENANT_ADMIN.
+```json
+{ "name": "Jane Smith", "email": "jane@co.com", "password": "pass1234", "role": "SUPERVISOR" }
+```
+Roles: TENANT_ADMIN / SUPERVISOR / AGENT
+
+**Error codes**
+| HTTP | code | Condition |
+|---|---|---|
+| 422 | `VALIDATION_ERROR` | Blank fields, password < 8, invalid role |
+| 409 | `EMAIL_TAKEN` | Email already registered |
+
+---
+
+## DELETE /users/{user_id}  ← v1.8
+
+Requires: TENANT_ADMIN. Cannot delete own account.
+**Response 200** — UserListItem (data captured before delete)
+
+**Error codes**
+| HTTP | code | Condition |
+|---|---|---|
+| 403 | `CANNOT_DELETE_SELF` | user_id matches current user |
+| 404 | `USER_NOT_FOUND` | UUID not in tenant |
+
+---
+
+## New TypeScript Interfaces (v1.8)
+
+```typescript
+export interface AgentListItem {
+  id: string
+  name: string
+  team: string
+  external_id: string | null
+  is_active: boolean
+  email: string | null
+}
+
+export interface UserListItem {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
+export interface RegisterRequest {
+  company_name: string
+  name: string
+  email: string
+  password: string
+  confirm_password: string
+}
+
+export interface UserInviteRequest {
+  name: string
+  email: string
+  password: string
+  role: string
+}
+
+export interface AgentCreateRequest {
+  name: string
+  team: string
+  email?: string
+  external_id?: string
+}
+
+export interface AgentUpdateRequest {
+  name?: string
+  team?: string
+  email?: string
+  is_active?: boolean
+}
+```

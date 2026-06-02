@@ -11,7 +11,7 @@
 - Docker Desktop running
 - WSL2 enabled
 - NVIDIA Container Toolkit installed (for GPU worker)
-- `N:\projects\call-quality-analytics\infra\.env` populated
+- `E:\projects\call-quality-analytics\infra\.env` populated
 
 ---
 
@@ -25,7 +25,7 @@ If tunnel.bat ran in a previous session, make sure it's closed before starting l
 
 ## Step 1 — Verify frontend Vite proxy points to localhost
 
-Check `N:\projects\call-quality-analytics\frontend\vite.config.ts`:
+Check `E:\projects\call-quality-analytics\frontend\vite.config.ts`:
 
 ```typescript
 proxy: {
@@ -44,7 +44,7 @@ If it shows `20.228.184.111` (Azure), switch it back:
 ## Step 2 — Start all services
 
 ```powershell
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml up -d
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml up -d
 ```
 
 This starts all 8 containers:
@@ -108,7 +108,7 @@ celery@worker_gpu ready.
 ## Step 6 — Seed the database (first run or after reset)
 
 ```powershell
-cd N:\projects\call-quality-analytics
+cd E:\projects\call-quality-analytics
 python scripts/reset_and_seed.py
 ```
 
@@ -119,7 +119,7 @@ Prints agent breakdown table when complete. 200 calls inserted.
 ## Step 7 — Start frontend
 
 ```powershell
-cd N:\projects\call-quality-analytics\frontend
+cd E:\projects\call-quality-analytics\frontend
 npm run dev
 ```
 
@@ -168,7 +168,7 @@ docker exec cq_postgres psql -U callquality -d callquality `
 docker exec cq_redis redis-cli DEL gpu_queue
 
 # Restart services that died in crash
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml `
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml `
   up -d api worker_io flower
 ```
 
@@ -178,15 +178,15 @@ docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml `
 
 ```powershell
 # Rebuild only the API container (most common)
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml `
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml `
   up -d --build api
 
 # Rebuild GPU worker (after requirements-gpu.txt changes — takes ~30 min)
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml `
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml `
   up -d --build worker_gpu
 
 # Rebuild everything (nuclear option)
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml `
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml `
   up -d --build
 ```
 
@@ -200,10 +200,10 @@ Only rebuild when `requirements.txt` or `Dockerfile` changes.
 
 ```powershell
 # Stop all services (data persists in minio_data volume)
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml down
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml down
 
 # Nuclear reset — wipes all data including MinIO volume
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.yml down -v
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.yml down -v
 # Run reset_and_seed.py again after this
 ```
 

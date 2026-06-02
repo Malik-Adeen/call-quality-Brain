@@ -1,8 +1,7 @@
 # STARTUP — Hybrid Mode (Azure B2s + Local RTX 3060 Ti)
 
-> Use this when: Azure B2s is running and you want the local GPU to process calls.
-> Azure handles: API, PostgreSQL, Redis, MinIO, worker_io, Flower.
-> Local handles: worker_gpu (WhisperX) via SSH tunnel.
+> ⚠️ DEPRECATED — Azure VM deleted as of May 2026. All services now run locally.
+> This document is archived for reference only. Use STARTUP_LOCAL.md instead.
 
 ---
 
@@ -83,7 +82,7 @@ Then silence — SSH -N produces no output when connected successfully.
 Open a new terminal (do NOT close the tunnel terminal).
 
 ```powershell
-docker compose -f N:\projects\call-quality-analytics\infra\docker-compose.hybrid.yml up -d worker_gpu
+docker compose -f E:\projects\call-quality-analytics\infra\docker-compose.hybrid.yml up -d worker_gpu
 ```
 
 ---
@@ -108,7 +107,7 @@ If `sync` never appears — the tunnel is not forwarding correctly. Restart tunn
 ## Step 6 — Start frontend
 
 ```powershell
-cd N:\projects\call-quality-analytics\frontend
+cd E:\projects\call-quality-analytics\frontend
 npm run dev
 ```
 
