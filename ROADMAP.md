@@ -40,23 +40,46 @@ Login shadow card. Sidebar tenant pill + coloured avatar. Agents coloured cards.
 
 ---
 
-## Active — Phase 8: MVP Hardening
+## Completed — Phase 8: MVP Hardening ✅
 
-### Phase 8A — Architecture Review Fixes (1 session)
-**Source:** Doc 41 — Architecture Review Synthesis
+### Phase 8A — Architecture Review Fixes ✅
+- [x] Fix `compute_talk_balance` → `1 - 2 * abs(agent_ratio - 0.5)`
+- [x] Add Redis AOF persistence (`--appendonly yes --appendfsync everysec`)
+- [x] write_scores delete-before-insert, scoped by `call_id AND tenant_id`
+- [x] PyJWT>=2.8.0 migration (python-jose CVE-2024-33664 removed)
+- [x] slowapi rate limiting added
+- [x] CORS_ORIGINS env var enforced
 
-- [ ] Fix `compute_talk_balance` → `1 - 2 * abs(agent_ratio - 0.5)`
-- [ ] Add Redis AOF persistence (`--appendonly yes --appendfsync everysec`)
-- [ ] Add upsert guards in `write_scores` (delete then insert, idempotent on retry)
-- [ ] Verify `write_scores` delete-before-insert already in place
-- [ ] LLM score variance test (run same call 20x, measure spread)
+### Phase 8B — UI Redesign ✅
+Design system: **Waaqi GRC tokens** — primary `#00a99d`, sidebar `#0f1924`, Inter + JetBrains Mono.
+React 18 → React 19. motion/react ^12.40.0.
 
-### Phase 8B — UI Redesign (2–3 sessions)
-Notion/Intercom aesthetic. Dark/light mode. Indigo #6366F1 accent. Dark sidebar always.
-Inter font only (drop Playfair, JetBrains Mono from UI chrome).
-Dark/light toggle in top-right header.
+### Phase 8C — Platform Admin ✅ (2026-06)
+5 platform admin pages: overview, tenants, system-health, usage, call-monitor.
+`get_db_platform` dependency. `platform_bypass` RLS migration on 5 tables.
+PLATFORM_ADMIN, TENANT_ADMIN, SUPERVISOR, AGENT, VIEWER roles.
 
-**Load before starting:** ckmui-styling skill + ui-ux-pro-max skill
+### Phase 8D — Security + Pre-Deploy Audit ✅ (2026-06-19)
+MinIO webhook model (replaces batch agent). `20260526_platform_rls_bypass` migration.
+`set_config()` parameterised RLS, no f-string SQL. `Dockerfile.cpu`, `docker-compose.azure.yml`, nginx.conf.
+All predeployment blockers fixed. Pushed to GitHub master.
+
+---
+
+## Active — Phase 9: Azure B4ms Deploy + First Revenue
+
+### Phase 9A — VM Provision + Deploy (next session)
+- [ ] `az vm create Standard_B4ms` East US
+- [ ] Docker install, `docker compose -f infra/docker-compose.azure.yml up -d --build`
+- [ ] `alembic upgrade head`, `reset_and_seed.py`
+- [ ] Full checklist: [[11_Azure_Deployment]]
+
+### Phase 9B — Pre-Revenue Hardening (before first paying tenant)
+- [ ] HTTPS (Let's Encrypt + certbot or Azure Application Gateway)
+- [ ] Azure Key Vault for JWT_SECRET, GROQ_API_KEY, HF_TOKEN
+- [ ] PostgreSQL daily backup cron → Azure Blob Storage
+- [ ] Defender for Cloud (free tier)
+- [ ] LLM score variance test (same call 20x, measure spread)
 
 Pages to redesign: Login, Sidebar, App layout, Overview, CallList, CallDetail, Agents, Reports, UploadCall
 
@@ -77,18 +100,6 @@ TENANT_ADMIN invites supervisors and viewers.
 
 Backend: `GET /users`, `POST /users/invite`, `DELETE /users/:id`
 Frontend: `UserManagement.tsx` — list users, invite form, deactivate
-
-### Phase 8F — Batch Upload Agent (1–2 sessions)
-Sandboxed Docker watchdog container. Read-only volume mount.
-
-Architecture (post-Kimi review):
-- SHA-256 checksum sent with upload (API = source of truth, not SQLite)
-- asyncio semaphore for 3–5 concurrent uploads
-- Adaptive backoff on 429/503
-- inotify/watchdog for filesystem events
-- Health endpoint on :8080
-
-Frontend: `BatchAgent.tsx` — configure path, set agent, start/stop, live feed
 
 ---
 
@@ -133,6 +144,7 @@ WebSocket audio chunk receiver. WhisperX streaming. Live transcript word-by-word
 | Item | Status | Reason |
 |---|---|---|
 | Azure B2s deployment | Cancelled | Credits exhausted. All-local Docker. |
+| Batch upload agent (batch_agent/) | Cancelled | Replaced by MinIO webhook model. Directory deleted 2026-06-19. |
 | QLoRA Whisper fine-tuning (near-term) | Deferred | No training data, no customers. Use SeamlessM4T instead. |
 | CRM integration | Deferred | Post-first-customer |
 | Priority customer scoring | Deferred | Post-first-customer |

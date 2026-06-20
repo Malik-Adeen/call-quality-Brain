@@ -1,16 +1,18 @@
 # INVARIANTS — AI Call Quality Analytics System
 
-> Ultra-compact context. Paste this into Qwen/Gemini/DeepSeek instead of full CONTEXT.md.
+> Ultra-compact context. Paste this into Codex/Gemini/DeepSeek instead of full CONTEXT.md.
 > Every rule here is enforced in production code. Violations break the pipeline.
 
 ---
 
 ## Stack (frozen — no deviations)
 
-Backend: FastAPI + Celery 5.x + Redis 7 + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
-AI: WhisperX large-v2 + Pyannote.audio 3.1 + Presidio (extended) + Groq llama-3.3-70b-versatile
-Frontend: React 18 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand
-Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
+Backend: FastAPI + Celery 5.x + Redis 7.4-alpine + MinIO + PostgreSQL 16 + SQLAlchemy 2.x + Pydantic 2.x + Playwright
+Auth: PyJWT>=2.8.0 + slowapi — NEVER python-jose (CVE-2024-33664)
+AI: WhisperX (cpu, int8, small model on Azure) + Pyannote.audio 3.1 + Presidio (extended) + Groq llama-3.3-70b-versatile
+Frontend: React 19 + TypeScript + Vite + TailwindCSS v4 + Recharts + Zustand + motion/react ^12.40.0
+Infra: Docker Compose (9 services) + nginx:alpine (SPA + reverse proxy)
+Design: Waaqi GRC tokens — primary #00a99d, sidebar #0f1924, Inter + JetBrains Mono
 
 ## Column Names (exact — never deviate)
 
@@ -23,7 +25,9 @@ Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 
 - Network: `cq_network`
 - MinIO: `cq-minio:9000` — hyphens, not underscores (botocore rejects underscores)
-- Container names: `cq_postgres`, `cq_redis`, `cq_minio`, `cq_api`, `cq_worker_io`, `cq_worker_gpu`, `cq_flower`
+- Container names: `cq_postgres`, `cq_redis`, `cq_minio`, `cq_api`, `cq_worker_io`, `cq_worker_cpu`, `cq_nginx`, `cq_flower`
+- All service ports: bound to `127.0.0.1` in Docker — never `0.0.0.0` (except nginx port 80)
+- depends_on: use service names, NOT container_name values
 
 ## Database URLs
 
@@ -31,9 +35,9 @@ Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 - Workers (sync): `postgresql://user:pass@cq_postgres:5432/db`
 - Never use asyncpg in Celery workers — causes MissingGreenlet error
 
-## Queue Routing (hardware isolation — violating causes VRAM OOM)
+## Queue Routing (hardware isolation — violating causes stall)
 
-- `run_whisperx` → `gpu_queue` ONLY (concurrency=1, prefetch=1)
+- `run_whisperx` → `gpu_queue` ONLY (concurrency=1, prefetch=1, max-tasks-per-child=1)
 - All other tasks → `io_queue` (concurrency=4, prefetch=2)
 - Speaker labels: `AGENT` or `CUSTOMER` — never `SPEAKER_00`/`SPEAKER_01`
 
@@ -43,6 +47,30 @@ Infra: Docker Compose + Flower 2.0 + SSH tunnel (hybrid Azure + local GPU)
 - Raw transcripts → never DB, Presidio-redacted only
 - `pii_redacted = TRUE` before `run_groq_inference` runs (gate enforced in task)
 - JWT → Zustand sessionStorage, never localStorage
+- REDIS_URL must include REDIS_PASSWORD
+- MinIO webhook auth failure → always return HTTP 200 (prevents infinite retry loop)
+- Platform admin endpoints → `get_db_platform` dependency only
+- SET LOCAL app.platform_bypass = 'true' — never remove from RLS policies
+
+## RLS Pattern (parameterised — never f-string SQL)
+
+```python
+# Correct: set_config() with bind param
+await db.execute(
+    text("SELECT set_config('app.current_tenant', :tid, true)"),
+    {"tid": str(tenant_id)},
+)
+# NEVER: f"SET LOCAL app.current_tenant = '{tenant_id}'" — SQL injection surface
+```
+
+`SET LOCAL app.current_tenant` per transaction — never SET SESSION.
+
+## Alembic
+
+Head: `20260526_platform_rls_bypass` (8 migrations total)
+Chain: create_tenants → add_tenant_id → enable_rls → force_rls → add_agent_sync_columns → agent_identity_extraction → indexes_and_constraints → platform_rls_bypass
+Run: always inside `cq_api` container — never on host Python
+Fallback: `alembic stamp 20260526_platform_rls_bypass` if inconsistent state error
 
 ## Pipeline Chain Order (invariant — do not reorder)
 
@@ -51,6 +79,11 @@ run_whisperx → extract_agent_identity → redact_pii → compute_talk_balance 
 ```
 
 extract_agent_identity MUST run before redact_pii — agent names are redacted as <PERSON> by Presidio.
+
+## write_scores (idempotency)
+
+delete-before-insert pattern. DELETE must be scoped by `call_id AND tenant_id`.
+Both CallMetrics and SentimentTimeline rows must be deleted before re-inserting.
 
 ## Scoring Formula (weights invariant)
 
@@ -61,7 +94,7 @@ agent_score = (0.25 * politeness + 0.20 * sentiment_delta_normalized +
 display_score = round(agent_score * 10, 2)  # stored 0-10, shown ×10 as % in UI
 ```
 
-## Talk Balance Formula (corrected — architecture review finding May 2026)
+## Talk Balance Formula
 
 ```python
 agent_words = sum word count of AGENT segments
@@ -69,7 +102,7 @@ customer_words = sum word count of CUSTOMER segments
 total_words = agent_words + customer_words
 agent_ratio = agent_words / total_words if total_words > 0 else 0.5
 talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
-# Perfect balance (50/50) = 1.0. Any imbalance reduces score. Agent talking 100% = 0.0.
+# Perfect balance (50/50) = 1.0. Agent talking 100% = 0.0.
 ```
 
 ## LLM Config
@@ -78,19 +111,29 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
 - OpenRouter fallback: `meta-llama/llama-3.3-70b-instruct`
 - Fallback triggers: HTTP 429 or 503 from Groq only
 
-## GPU / Dockerfile Rules
+## Dockerfile Rules
 
-- Dockerfile.gpu base: `nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04`
-- Python: must explicitly install 3.11 (base image ships 3.10)
-- PyTorch: `torch==2.2.0+cu121` — index URL `https://download.pytorch.org/whl/cu121`
-- `numpy<2` must be the LAST pip install step — pyannote pulls numpy>=2 as transitive dep
-- Package: `nvidia-ml-py` — never `pynvml` (renamed)
-- Cache mounts: `C:\Users\adeen\.cache\huggingface` + `C:\Users\adeen\.cache\torch`
+- CPU worker (Azure): `backend/Dockerfile.cpu` — python:3.11-slim, no CUDA
+  - torch==2.2.0+cpu via `--index-url https://download.pytorch.org/whl/cpu`
+  - whisperx + pyannote.audio 3.1 + faster-whisper + ctranslate2
+  - `numpy<2` last pip install step
+  - compute_type hardcoded to "int8" in whisper_service.py
+- GPU worker (local dev): `backend/Dockerfile.gpu` — nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+- API worker: `backend/Dockerfile` — includes Playwright for PDF export
+
+## Roles
+
+PLATFORM_ADMIN, TENANT_ADMIN, SUPERVISOR, AGENT, VIEWER
+
+## Upload Model
+
+MinIO webhook: mc mirror --watch puts files in MinIO → MinIO fires POST /internal/minio-event → FastAPI creates Call row → Celery chain fires
+No batch agent. No polling. No SQLite manifest.
 
 ## Banned Tools
 
-Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, raw transcript in DB,
-audio blob in DB, Node.js backend, generic Celery pool (use named queues only)
+Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, python-jose, Node.js backend,
+raw transcript in DB, audio blob in DB, asyncpg in Celery workers
 
 ## Code Style
 
@@ -98,14 +141,14 @@ Zero comments — ever. Self-documenting code only. Complete files, no partial s
 
 ## Development Workflow
 
-Claude = auditor and prompt writer. Codex/Copilot = code generator.
-Claude writes Codex prompts. Claude audits generated code against these invariants.
-Claude does not generate production code — conserves tokens, maintains quality.
+Claude Code = architect, auditor, prompt writer (for Codex/Antigravity), code executor and file editor
+Antigravity (CLI) = React component generation, Frontend Dev
+Codex CLI = Backend Dev, code generation
 
 ## Current State (v1.7)
 
-All local Docker. Pipeline verified: billing_dispute 88.3%.
+All Docker. Azure B4ms CPU deployment ready (files committed, VM not yet provisioned).
 Multi-tenancy: triple-layer RLS live. Two tenants verified isolated.
-Architecture reviews done (DeepSeek/GLM/Kimi/Opus May 2026) — see doc 41.
+Platform admin: 5 pages live (overview, tenants, health, usage, call monitor).
+Alembic: 8 migrations applied. Head: 20260526_platform_rls_bypass.
 Repo: github.com/Malik-Adeen/call-quality-analytics
-Vault: N:\projects\docs
