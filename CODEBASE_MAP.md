@@ -16,10 +16,14 @@ status: auto-generated
 
 [[07_Phase1_Postmortem]] → [[08_Phase2.1_Postmortem]] → [[09_Phase2.2_Postmortem]] → [[11_Phase2.3_Postmortem]] → [[12_Phase2.4_Postmortem]]
 
+MinIO webhook → `POST /internal/minio-event` → Call row created → Celery chain:
+
 ```
-ingest_upload → run_whisperx → redact_pii [GATE] → compute_talk_balance → run_groq_inference → write_scores → notify_websocket
-    api_sync      gpu_queue      io_queue              io_queue               io_queue             io_queue       io_queue
+run_whisperx → extract_agent_identity → redact_pii [GATE] → compute_talk_balance → run_groq_inference → write_scores → notify_websocket
+  gpu_queue        io_queue               io_queue              io_queue               io_queue             io_queue       io_queue
 ```
+
+Note: `extract_agent_identity` MUST precede `redact_pii` — agent names are PII.
 
 ---
 
@@ -56,9 +60,11 @@ These files are imported by the most other files — break one, break everything
 |---|---|---|
 | `app/routers/auth.py` | POST /auth/login | [[03_API_Contract]] |
 | `app/routers/calls.py` | GET /calls, GET /calls/{id}, POST /calls/upload | [[03_API_Contract]] |
-| `app/routers/agents.py` | GET /agents/{id}/scores | [[03_API_Contract]] |
+| `app/routers/agents.py` | GET /agents/{id}/scores, POST /agents/sync | [[03_API_Contract]] |
 | `app/routers/reports.py` | POST /reports/export (Playwright PDF) | [[23_Phase4_Postmortem]] |
 | `app/routers/ws.py` | WS /ws/{user_id}?token= | [[12_Phase2.4_Postmortem]] |
+| `app/routers/minio_event.py` | POST /internal/minio-event (MinIO webhook trigger) | [[11_Azure_Deployment]] |
+| `app/routers/platform.py` | /platform/overview, /platform/tenants, /platform/system-health, /platform/usage, /platform/call-monitor | [[44_Session_Handoff_2026-06-19]] |
 
 ---
 
