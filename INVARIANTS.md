@@ -145,10 +145,12 @@ Claude Code = architect, auditor, prompt writer (for Codex/Antigravity), code ex
 Antigravity (CLI) = React component generation, Frontend Dev
 Codex CLI = Backend Dev, code generation
 
-## Current State (v1.7)
+## Current State (v1.9)
 
-All Docker. Azure B4ms CPU deployment ready (files committed, VM not yet provisioned).
+All Docker. Target architecture: Azure B4ms (app tier, always-on) + NC4as_T4_v3 GPU worker (on-demand/Spot) — fully cloud, no local GPU.
+`docker-compose.azure.yml` currently single-box CPU-only — needs splitting into two Compose files before VM deploy.
 Multi-tenancy: triple-layer RLS live. Two tenants verified isolated.
 Platform admin: 5 pages live (overview, tenants, health, usage, call monitor).
 Alembic: 8 migrations applied. Head: 20260526_platform_rls_bypass.
+`.env.prod`: REDIS_PASSWORD, MINIO_WEBHOOK_SECRET, CORS_ORIGINS added — update CORS_ORIGINS with real VM IP after provisioning.
 Repo: github.com/Malik-Adeen/call-quality-analytics

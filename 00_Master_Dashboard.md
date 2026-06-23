@@ -2,7 +2,7 @@
 tags: [moc, dashboard]
 status: active
 created: 2026-04-11
-updated: 2026-05-26 (session 10)
+updated: 2026-06-23 (vault cleanup — archived 65 docs, removed Drive sync junk)
 ---
 
 # 00 — Master Dashboard
@@ -32,21 +32,21 @@ updated: 2026-05-26 (session 10)
 
 | Phase | Description | Status | Notes |
 |---|---|---|---|
-| 1 | Foundation — Auth, Upload, Docker, Celery | ✅ | [[07_Phase1_Postmortem]] |
-| 2 | AI Pipeline — WhisperX, Presidio, Groq, WebSocket | ✅ | [[13_Phase2_E2E_Postmortem]] |
-| 3 | React Dashboard — 6 pages | ✅ | [[17_Phase3_Frontend]] |
-| 4 | PDF export (Playwright) | ✅ | [[23_Phase4_Postmortem]] |
-| 5 | Multi-Tenancy — RLS, JWT tenant claim, Celery tenant_id | ✅ | [[35_Session_Handoff_2026-05-01]] |
-| 6 | Agent Integration — migration 005, /agents routes | ✅ | [[36_Session_Handoff_2026-05-02]] |
-| 7 | Agent Identity Extraction from audio | ✅ | [[37_Phase7_Postmortem]] |
-| 8A | Architecture review P0 fixes (talk balance, idempotency, Redis AOF) | ✅ | [[41_Architecture_Review_Synthesis]] |
-| 8B | Waaqi GRC UI redesign (14 files, dark mode, teal design system) | ✅ | [[44_Session_Handoff_Next]] |
+| 1 | Foundation — Auth, Upload, Docker, Celery | ✅ | Archive/07_Phase1_Postmortem |
+| 2 | AI Pipeline — WhisperX, Presidio, Groq, WebSocket | ✅ | Archive/13_Phase2_E2E_Postmortem |
+| 3 | React Dashboard — 6 pages | ✅ | Archive/17_Phase3_Frontend |
+| 4 | PDF export (Playwright) | ✅ | Archive/23_Phase4_Postmortem |
+| 5 | Multi-Tenancy — RLS, JWT tenant claim, Celery tenant_id | ✅ | Archive/35_Session_Handoff_2026-05-01 |
+| 6 | Agent Integration — migration 005, /agents routes | ✅ | Archive/36_Session_Handoff_2026-05-02 |
+| 7 | Agent Identity Extraction from audio | ✅ | Archive/37_Phase7_Postmortem |
+| 8A | Architecture review P0 fixes (talk balance, idempotency, Redis AOF) | ✅ | Archive/41_Architecture_Review_Synthesis_2026-05-03 |
+| 8B | Waaqi GRC UI redesign (14 files, dark mode, teal design system) | ✅ | Archive/44_Session_Handoff_Next |
 | 8C | Register page + POST /auth/register | ✅ | |
 | 8D | Agent Management GUI (CRUD) | ✅ | |
 | 8E | User Management GUI (invite, roles) | ✅ | |
 | 8F | MinIO webhook upload model (replaced BatchAgent) | ✅ | [[59_Session_Handoff_2026-05-18]] |
 | 8G | PLATFORM_ADMIN role + TenantManagement page | ✅ | |
-| 8H | Pre-Azure security audit — 9 findings fixed | ✅ | [[61_Pre_Azure_Security_Audit]] |
+| 8H | Pre-Azure security audit — 9 findings fixed | ✅ | Archive/61_Pre_Azure_Security_Audit |
 | 8I | UI P0+P1 accessibility audit — contrast, fonts, dark mode | ✅ | |
 | 8J | PLATFORM_ADMIN dashboard — 5 pages (Figma AI → Antigravity) | ✅ | |
 | 8K | RLS bypass migration 008 — get_db_platform dependency | ✅ | |
@@ -59,18 +59,16 @@ updated: 2026-05-26 (session 10)
 
 ## Alembic State
 
+Squashed 2026-06-23 — migrations 001–008 collapsed into one base migration so a fresh DB bootstraps with a single `alembic upgrade head` (no `create_all`, no `stamp`, no `02_Database_Schema.sql`).
+
 | Migration | Revision ID | Status |
 |---|---|---|
-| 001 Create tenants | `20260501_create_tenants` | ✅ Applied |
-| 002 Add tenant_id | `20260501_add_tenant_id` | ✅ Applied |
-| 003 RLS + roles | `20260501_enable_rls` | ✅ Applied |
-| 004 FORCE RLS | `20260501_force_rls` | ✅ Applied |
-| 005 Agent sync columns | `20260601_add_agent_sync_columns` | ✅ Applied |
-| 006 Agent identity extraction | `20260701_agent_identity` | ✅ Applied |
-| 007 Indexes + constraints | `20260513_indexes_and_constraints` | ✅ Applied |
-| 008 Platform RLS bypass | `20260526_platform_rls_bypass` | ✅ Applied |
+| Base schema (all 6 tables + RLS + FORCE + platform_bypass + uq_call_metrics_call_id) | `20260501_base_schema` (down_revision=None) | ✅ Applied |
+| Idempotency unique constraints | `20260621_idempotency` | ✅ Applied |
 
-**Current head:** `20260526_platform_rls_bypass` (migration 008)
+**Current head:** `20260621_idempotency`
+
+`users_role_check` now covers all 5 roles incl. `AGENT` (corrected from the historical 4-role constraint).
 
 ---
 
@@ -172,6 +170,10 @@ npm run dev
 | [[INVARIANTS]] | 600-token rules block |
 | [[LOG]] | One-line session history |
 | [[ROADMAP]] | B2B SaaS phase planning |
-| [[61_Pre_Azure_Security_Audit]] | Latest security audit findings |
-| [[41_Architecture_Review_Synthesis_2026-05-03]] | Multi-LLM architecture review |
-| [[WAAQI_TOKENS]] | Design token spec (at project root) |
+| [[KNOWN_ISSUES]] | Authoritative issue tracker |
+| [[CODEBASE_MAP]] | Codebase/graph structure map |
+| [[GRAPH_REPORT]] | Knowledge-graph report |
+| [[62_Session_Handoff_2026-06-22]] | Latest session handoff |
+| [[44_Session_Handoff_2026-06-19]] | Prior session handoff |
+| [[59_Session_Handoff_2026-05-18]] | Prior session handoff |
+| `Archive/` | Superseded postmortems, plans, phase docs, old audits, older handoffs |

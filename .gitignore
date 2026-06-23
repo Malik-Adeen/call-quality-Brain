@@ -1,5 +1,6 @@
 .obsidian/
 .tmp.driveupload/
 graph_cache.json
+graphify-out/
 repo_snapshot.xml
 *.xml
