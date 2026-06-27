@@ -2,7 +2,7 @@
 tags: [moc, dashboard]
 status: active
 created: 2026-04-11
-updated: 2026-06-23 (vault cleanup — archived 65 docs, removed Drive sync junk)
+updated: 2026-06-25 (Fahad demo deployment complete)
 ---
 
 # 00 — Master Dashboard
@@ -51,9 +51,9 @@ updated: 2026-06-23 (vault cleanup — archived 65 docs, removed Drive sync junk
 | 8J | PLATFORM_ADMIN dashboard — 5 pages (Figma AI → Antigravity) | ✅ | |
 | 8K | RLS bypass migration 008 — get_db_platform dependency | ✅ | |
 | 8L | Azure deployment prep — frontend/Dockerfile, nginx.conf, prod compose | ✅ | |
-| 9 | Azure Canada Central deploy | 🔄 In progress — build phase |
-| 10 | ROI reporting | 🔲 Post-Azure |
-| 11 | Agentic AI assistant (NL query layer) | 🔲 Post-Azure |
+| 9 | Fahad demo deployment — Blackwell GPU, full pipeline working | ✅ | 63_Session_Handoff_2026-06-25, 64_Fahad_Demo_Deployment_Postmortem |
+| 10 | ROI reporting | 🔲 Next |
+| 11 | Agentic AI assistant (NL query layer) | 🔲 After ROI |
 
 ---
 
@@ -173,7 +173,9 @@ npm run dev
 | [[KNOWN_ISSUES]] | Authoritative issue tracker |
 | [[CODEBASE_MAP]] | Codebase/graph structure map |
 | [[GRAPH_REPORT]] | Knowledge-graph report |
-| [[62_Session_Handoff_2026-06-22]] | Latest session handoff |
+| [[63_Session_Handoff_2026-06-25]] | Latest session handoff |
+| [[64_Fahad_Demo_Deployment_Postmortem]] | Blackwell deployment postmortem |
+| [[62_Session_Handoff_2026-06-22]] | Prior session handoff (superseded) |
 | [[44_Session_Handoff_2026-06-19]] | Prior session handoff |
 | [[59_Session_Handoff_2026-05-18]] | Prior session handoff |
 | `Archive/` | Superseded postmortems, plans, phase docs, old audits, older handoffs |

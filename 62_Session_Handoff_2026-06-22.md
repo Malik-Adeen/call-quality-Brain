@@ -3,7 +3,7 @@ tags:
   - handoff
   - session-starter
 date: '2026-06-22'
-status: active
+status: superseded
 ---
 
 # 62 — Session Handoff (Next Chat) — 2026-06-22
