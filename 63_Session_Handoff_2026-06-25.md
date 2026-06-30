@@ -4,7 +4,7 @@ tags:
   - session-starter
   - deployment
 date: '2026-06-25'
-status: active
+status: superseded by 65_Session_Handoff_2026-06-28.md
 ---
 
 # 63 — Session Handoff (2026-06-25) — Fahad Demo Deployment Complete
@@ -153,9 +153,9 @@ Get WSL2 IP with: `ip addr show eth0 | grep "inet "` inside WSL2.
 | auth.py RLS bypass is broad | MEDIUM | app/routers/auth.py | `platform_bypass=true` for entire login flow. Should scope to just the user lookup. |
 | infra/.env not gitignored | HIGH | infra/.env | Contains live secrets. Verify .gitignore covers it. |
 | reset_and_seed.py hardcodes localhost | LOW | reset_and_seed.py | Replace `@cq_postgres:` with `@localhost:` — must be run with DATABASE_URL override |
-| SSH not persistent | LOW | WSL2 | `sudo service ssh start` needed each session |
+| SSH not persistent | ~~LOW~~ | ~~WSL2~~ | ✅ RESOLVED 2026-06-28 — Task Scheduler starts SSH at login via start-callquality.ps1 |
 | Groq key in both .env files | MEDIUM | infra/.env + infra/.env.prod | Both must stay in sync manually |
-| nginx DNS cache stale after restart | LOW | docker networking | `docker exec cq_nginx nginx -s reload` required after any container IP change |
+| nginx DNS cache stale after restart | ~~LOW~~ | ~~docker networking~~ | ✅ RESOLVED 2026-06-28 — nginx force-recreated on every startup via start-callquality.ps1 |
 
 ---
 
