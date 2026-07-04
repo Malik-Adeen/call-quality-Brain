@@ -52,3 +52,5 @@ tags:
 2026-04-19 — UI audit complete. Sea-level dashboard live (6 panels). Agents page hardened. CallList/CallDetailPanel polished. PASS verdict. 2 major issues (non-blocking): Evaluated-at label, minCalls=5 filter.
 
 2026-04-18 — Final session on Pro account. Built custom knowledge graph builder (scripts/build_graph.py). Outputs GRAPH_REPORT.md. Added STARTUP_HYBRID.md + STARTUP_LOCAL.md. PROMPTING_GUIDE.md + INVARIANTS.md for multi-LLM workflow.
+
+2026-07-04 — Codebase cleanup complete. Router/service split, pipeline stages split, frontend decomp. c952b11 master. CT2 pinned 4.8.0. call-qa.tech domain acquired, Cloudflare Tunnel pending. Next: uv migration.
