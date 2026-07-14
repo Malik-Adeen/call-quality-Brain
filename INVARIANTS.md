@@ -82,8 +82,11 @@ extract_agent_identity MUST run before redact_pii — agent names are redacted a
 
 ## write_scores (idempotency)
 
-delete-before-insert pattern. DELETE must be scoped by `call_id AND tenant_id`.
-Both CallMetrics and SentimentTimeline rows must be deleted before re-inserting.
+`ON CONFLICT DO UPDATE` upsert scoped by `(call_id, tenant_id)` — changed 2026-06-21 (migration `20260621_idempotency`), replaces the earlier delete-before-insert pattern. Applies to both CallMetrics and SentimentTimeline.
+
+## API Response Envelope
+
+Correct rule (prior phrasing "every endpoint returns 200+envelope" was overreach): every endpoint returns the envelope SHAPE in the body (`{success, data, error, request_id}`) plus the CORRECT HTTP status for the outcome. Auth failures return 401 WITH the envelope body — confirmed via `/auth/login`'s `error_response()` helper (schemas/api.py), which builds `JSONResponse(status_code=401, content={"success": False, "data": None, "error": {...}, "request_id": ...})`. Envelope shape is not tied to a fixed status code.
 
 ## Scoring Formula (weights invariant)
 
@@ -107,7 +110,7 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
 
 ## LLM Config
 
-- Groq primary: `llama-3.3-70b-versatile` (3.1 is deprecated — 400 error)
+- Groq primary: `llama-3.3-70b-versatile` (3.1 is deprecated — 400 error) — **this model is now itself DEPRECATED by Groq, decommission 2026-08-16.** Migration to `openai/gpt-oss-120b` via structured-output mode is PENDING (not started). Do not delete this line until migration lands — model still in production use. Note: gpt-oss is a reasoning model, so the current "respond ONLY with JSON" prompt-only approach will break; migration must use JSON-schema structured output, not prompt-only. Config lives on both master and deploy/fahad-demo — migrate both. Re-validate all 5 score components after migration.
 - OpenRouter fallback: `meta-llama/llama-3.3-70b-instruct`
 - Fallback triggers: HTTP 429 or 503 from Groq only
 

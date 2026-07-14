@@ -1,7 +1,7 @@
 # KNOWN ISSUES — AI Call Quality Analytics System
 
 > Authoritative issue tracker for the SaaS product. Updated after each audit session.
-> Last updated: 2026-06-25 (Fahad demo deployment). Active branch: deploy/fahad-demo.
+> Last updated: 2026-07-15 (uv/model migration, master). Active branch: deploy/fahad-demo.
 
 ---
 
@@ -27,6 +27,23 @@
 | Auth RLS at login | Pre-existing RLS bug: login endpoint has no tenant context → RLS filters all users → 401 after full container restart | deploy/fahad-demo auth.py |
 | CT2 cuDNN mismatch (Blackwell) | CT2 4.4.0 linked cuDNN 8; CUDA 12.8 base image ships cuDNN 9 → SIGABRT | deploy/fahad-demo Dockerfile.gpu.blackwell |
 | PyTorch 2.7 weights_only | `torch.load` defaults changed to `weights_only=True`; pyannote omegaconf types blocked | deploy/fahad-demo whisper_service.py |
+
+---
+
+## Found 2026-07-12 — Test Suite Audit (Untriaged)
+
+- **Webhook route hardening (possible PROD bug)** — `/internal/minio-event` calls `async with db.begin()` assuming a fresh session — robust in prod (fresh DI session) but same shape as the 2026-05-10 audit CRITICAL (premature begin / SET LOCAL timing). The DB-write path was UNTESTED until this session (empty MINIO_WEBHOOK_SECRET made auth always fail, masking it). Candidate fix: begin_nested / in_transaction() guard. Decision pending — route vs harness.
+- **Test harness session-sharing flaw** (root of 3 failing tests) — `conftest.py`'s `db_session` fixture hands ONE transaction-active async session to both the test body and the route-under-test via `dependency_overrides`, diverging from production (routes get a fresh DI session; Celery workers use SYNC sessions). See 68_Session_Handoff_2026-07-12.md for full symptom breakdown.
+- **av/FFmpeg scoping CORRECTION**: prior claim "confined to Dockerfile.cpu, unrelated to resolver" is WRONG. av 11.0.0 is sdist-only (no wheels, any platform), forced by faster-whisper==1.0.0; blocks `uv lock` on any FFmpeg>=7 host. Resolved via `tool.uv.dependency-metadata`.
+- **Stale mock_self test bug class** (3 instances; 1 unfixed) — redundant `mock_self` passed as a 5th arg to `bind=True` Celery tasks in tests; Celery already auto-injects `self`. 2 fixed (write_scores tests), 1 unfixed (test_pii_gate_blocks_groq_when_not_redacted). PII gate itself was never exercised by the failing test — not a safety-guard failure.
+
+---
+
+## Found 2026-07-15 — uv/model migration session
+
+- **agent_identity.py has no Pydantic validation** — uses raw `json.loads` on the Groq response with no schema/validator, unlike llm_client.py's Pydantic-validated `InferenceResult` path. More fragile under a reasoning model (gpt-oss-120b) than the validated path. Structured-output hardening deliberately deferred.
+- **Two hand-rolled httpx LLM callers with duplicated fallback logic + divergent parsing** — llm_client.py and agent_identity.py each reimplement their own Groq/OpenRouter HTTP call, retry, and parse logic. Real tech debt; should be one shared client. Not refactored this session — out of scope.
+- **CI will be RED on first master run** — 4 known test failures (see 69_Session_Handoff_2026-07-15.md for root cause). Expected, not a regression; ci.yml's `main→master` branch fix means this is the first time push CI has ever actually fired on master.
 
 ---
 

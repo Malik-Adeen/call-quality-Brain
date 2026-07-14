@@ -118,7 +118,7 @@ FastAPI (Python 3.11) · Celery 5.x · Redis 7.4-alpine · MinIO · PostgreSQL 1
 PyJWT>=2.8.0 + slowapi (rate limiting) · Never python-jose (CVE-2024-33664)
 
 ### AI / ML
-WhisperX large-v2 (CUDA on NC4as_T4_v3 T4, gpu_queue concurrency=1) · Pyannote.audio 3.1 (diarization) · Microsoft Presidio (extended) · Groq `llama-3.3-70b-versatile` · OpenRouter fallback
+WhisperX large-v2 (CUDA on NC4as_T4_v3 T4, gpu_queue concurrency=1) · Pyannote.audio 3.1 (diarization) · Microsoft Presidio (extended) · Groq (env-driven via `GROQ_INFERENCE_MODEL`, default `openai/gpt-oss-120b`) · OpenRouter fallback (`meta-llama/llama-3.3-70b-instruct`, non-reasoning, deliberately not mirrored)
 
 ### Frontend
 React 19 + TypeScript · Vite · TailwindCSS v4 · Recharts · Zustand (sessionStorage) · motion/react ^12.40.0 · Axios
@@ -143,7 +143,7 @@ Ollama (in pipeline), VADER, WeasyPrint, localStorage for JWT, python-jose, Node
 3. **`pii_redacted = TRUE`** must be set before `run_groq_inference` runs.
 4. **`run_whisperx`** → `gpu_queue` exclusively. Concurrency locked to 1.
 5. **JWT** lives in Zustand sessionStorage. Never localStorage, never a cookie.
-6. **Groq model** is `llama-3.3-70b-versatile`. Never use 3.1 — deprecated, 400 error.
+6. **Groq model** is env-driven via `GROQ_INFERENCE_MODEL` (default `openai/gpt-oss-120b`). `llama-3.3-70b-versatile` decommissioned by Groq 2026-08-16. Two call sites read the same var — llm_client.py (Pydantic-validated) and agent_identity.py (raw json.loads, unvalidated). OpenRouter fallback stays `meta-llama/llama-3.3-70b-instruct` (non-reasoning) — deliberately not mirrored to the Groq model.
 7. **MinIO hostname** is `cq-minio:9000` with hyphens. Underscores rejected by botocore.
 8. **DATABASE_URL** uses `postgresql+asyncpg://` for the API, `postgresql://` for Celery workers.
 9. **Score display**: backend stores 0–10, UI multiplies by 10 to show percentage.
