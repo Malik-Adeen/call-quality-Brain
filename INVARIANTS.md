@@ -26,7 +26,11 @@ Design: Waaqi GRC tokens — primary #00a99d, sidebar #0f1924, Inter + JetBrains
 - Network: `cq_network`
 - MinIO: `cq-minio:9000` — hyphens, not underscores (botocore rejects underscores)
 - Container names: `cq_postgres`, `cq_redis`, `cq_minio`, `cq_api`, `cq_worker_io`, `cq_worker_cpu`, `cq_nginx`, `cq_flower`
-- All service ports: bound to `127.0.0.1` in Docker — never `0.0.0.0` (except nginx port 80)
+- All service ports: bound to `127.0.0.1` in Docker — never `0.0.0.0`. No exception as of
+  2026-07-16: `infra/docker-compose.app.yml:131` (nginx port 80) moved `0.0.0.0:80:80` →
+  `127.0.0.1:80:80` (commit `28ee65d`, deploy/fahad-demo). External access is via Cloudflare
+  Tunnel (`cloudflared` → `http://localhost:80`), which reaches a `127.0.0.1`-bound port fine
+  since it runs on the same host.
 - depends_on: use service names, NOT container_name values
 
 ## Database URLs
@@ -113,6 +117,9 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
 - Groq primary: `llama-3.3-70b-versatile` (3.1 is deprecated — 400 error) — **this model is now itself DEPRECATED by Groq, decommission 2026-08-16.** Migration to `openai/gpt-oss-120b` via structured-output mode is PENDING (not started). Do not delete this line until migration lands — model still in production use. Note: gpt-oss is a reasoning model, so the current "respond ONLY with JSON" prompt-only approach will break; migration must use JSON-schema structured output, not prompt-only. Config lives on both master and deploy/fahad-demo — migrate both. Re-validate all 5 score components after migration.
 - OpenRouter fallback: `meta-llama/llama-3.3-70b-instruct`
 - Fallback triggers: HTTP 429 or 503 from Groq only
+- Retry-based recovery requires nonzero temperature. `temperature: 0.0` makes
+  `json_validate_failed` deterministic and renders `max_retries` useless
+  (verified 2026-07-15: 4/4 identical failures, same transcript, same `0. nine`).
 
 ## Dockerfile Rules
 
@@ -123,6 +130,30 @@ talk_balance_score = round(1.0 - abs(agent_ratio - 0.5) * 2, 4)
   - compute_type hardcoded to "int8" in whisper_service.py
 - GPU worker (local dev): `backend/Dockerfile.gpu` — nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 - API worker: `backend/Dockerfile` — includes Playwright for PDF export
+
+## Windows Service Deployment — cloudflared (re-breakable, verified 2026-07-16)
+
+`cloudflared service install` on Windows (v2026.7.2) installs the service with **no arguments** —
+bare `cloudflared.exe`, no `--config`, no `tunnel run`. It starts, has nothing to do, exits, and
+crash-loops every 20s, with no cause logged anywhere (Application log: "service starting" only;
+System log: "terminated unexpectedly" only). Reinstalling after the config file exists does NOT
+fix it, `--config X service install` does NOT fix it, copying `config.yml` into LocalSystem's
+profile does NOT fix it, `sc.exe config binPath=` fails under PowerShell quoting.
+
+Fix — set the service args via the registry directly, then restart:
+
+```powershell
+$bin = '"C:\Program Files (x86)\cloudflared\cloudflared.exe" --config "C:\Users\fahad\.cloudflared\config.yml" tunnel run call-qa-tech'
+Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\cloudflared' -Name ImagePath -Value $bin
+Restart-Service cloudflared
+```
+
+Verify: `(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\cloudflared').ImagePath`.
+
+**Any reinstall or upgrade of the `cloudflared` service silently regresses to bare args** — re-run
+the registry fix after every reinstall/upgrade. The token-based install path writes correct args
+automatically but requires Cloudflare Zero Trust activation, which demands a payment card
+(rejected for this project). See 70_Session_Handoff_2026-07-15.md STEP 3 for full context.
 
 ## Roles
 
@@ -157,3 +188,8 @@ Platform admin: 5 pages live (overview, tenants, health, usage, call monitor).
 Alembic: 8 migrations applied. Head: 20260526_platform_rls_bypass.
 `.env.prod`: REDIS_PASSWORD, MINIO_WEBHOOK_SECRET, CORS_ORIGINS added — update CORS_ORIGINS with real VM IP after provisioning.
 Repo: github.com/Malik-Adeen/call-quality-analytics
+Public demo URL (Fahad's machine, deploy/fahad-demo branch): https://call-qa.tech via Cloudflare
+Tunnel (`cloudflared` Windows service → `http://localhost:80` → `cq_nginx`). Verified 2026-07-16:
+login, WebSocket, and end-to-end call scoring all work through the tunnel. Tailscale Funnel is
+off — do not treat `https://deltaroot-pt-lp.tailb8d983.ts.net` as current; that URL only appears
+in historical records now (65_Session_Handoff_2026-06-28.md, LOG.md's 2026-06-28 entry).

@@ -1,7 +1,7 @@
 # KNOWN ISSUES — AI Call Quality Analytics System
 
 > Authoritative issue tracker for the SaaS product. Updated after each audit session.
-> Last updated: 2026-07-15 (uv/model migration, master). Active branch: deploy/fahad-demo.
+> Last updated: 2026-07-16 (Cloudflare Tunnel deployment, Fahad demo machine). Active branch: deploy/fahad-demo.
 
 ---
 
@@ -47,6 +47,49 @@
 
 ---
 
+## Found 2026-07-15 (session 2) — Fahad demo machine (Groq key fix, gpt-oss model port, batch upload)
+
+All items below exist on master too — fixed (or mitigated) only on deploy/fahad-demo this session.
+
+- **`run_inference` retry loop is dead code** — introduced by `9143a8e`. The loop logs "retrying" then `break`s to the next provider — `max_retries` never applied. Fix: `continue` before the `break` when `attempt < max_retries - 1`. Needs a scoped port to master.
+- **gpt-oss + `response_format` strict:true + `reasoning_effort:"low"` → ~40% `json_validate_failed`** — measured 2/5 failures on identical input. Model emits literal `0. nine` instead of `0.9`; Groq's schema validator rejects it. `reasoning_effort:"low"` is the suspect (added untested by `9143a8e`). `medium` is untested — all 5 probes hit 429 (TPM exhausted). Retest on the dev box. Current mitigation is `max_retries=4` → ~2.6% residual failure — a mitigation, not a fix.
+- **`temperature:0.0` is actively harmful with this failure mode** — greedy decoding makes the fumble deterministic, so retries don't help (one call failed 4/4 identically). Reverted to 0.2. Promoted to INVARIANTS.md: retry-based recovery requires nonzero temperature.
+- **`OPENROUTER_API_KEY` invalid on the demo machine** (401) — no fallback leg. Every `json_validate_failed` that exhausts retries is a hard call failure. Fix before demo.
+- **CORRECTED — "diarization collapse on Blackwell" was a gTTS test-fixture defect, not a Blackwell/pyannote bug.** Originally logged here as highest-priority/demo-blocking. Re-examined: same worker, same GPU, same run — `agent_identity_priya.mp3` diarized correctly (AGENT and CUSTOMER both present) while `agent_identity_marcus.mp3` collapsed to all-AGENT. Per-file, not per-machine — Blackwell is exonerated. Root cause: `scripts/generate_test_audio.py` generates fixtures with gTTS using accent variants only (`tld="com"` agent, `tld="com.au"` customer) — same synthesis engine, same underlying voice; pyannote's speaker embeddings cannot reliably separate them, so reporting one speaker on these fixtures is correct behavior, not a bug. The `std(): degrees of freedom is <= 0` pyannote warning is a symptom of single-speaker input, not a cause. Real customer audio (two humans) will not reproduce this — not a production bug. Moved to test-data known-issues below; see also Demo Risks table for the actual risk this exposed (talk_balance_score masking).
+- **Test-data limitation — gTTS fixtures cannot exercise two-speaker diarization.** `scripts/generate_test_audio.py` synthesizes both AGENT and CUSTOMER fixture audio from the same gTTS engine and voice, varying only the `tld` accent parameter (`com` vs `com.au`). Pyannote's speaker-embedding model cannot reliably distinguish these as two speakers and will legitimately collapse some fixture files (e.g. `agent_identity_marcus.mp3`) to a single AGENT label. This is a fixture-generation gap, not a pipeline defect — real two-human call audio is unaffected. Fix would require distinct TTS voices (different engine or speaker embedding) per role if two-speaker fixture tests are needed.
+- **`UploadCall.tsx` hardcodes `MAX_FILE_SIZE = 50MB`** (3 call sites) vs. `calls.py:347`'s 100MB limit — frontend rejects files the backend accepts. `BatchUpload.tsx` (new this session) uses the correct 100MB; `UploadCall.tsx` not fixed.
+- **Three different Groq API keys were live across containers simultaneously** on Fahad's box, because `docker-compose.app.yml` (`cq_api`, `cq_worker_io`) and `docker-compose.gpu.yml` (`cq_worker_gpu`) load env differently — see the corrected `infra/.env secret management` entry above. Root-caused and fixed this session; verify with `docker exec <container> printenv GROQ_API_KEY`, not by reading files.
+
+## Found 2026-07-16 — Cloudflare Tunnel deployment (Fahad demo machine)
+
+`call-qa.tech` is now live via Cloudflare Tunnel, replacing Tailscale Funnel as the public URL
+(Tailscale Funnel was already off before this session — nothing to decommission). Full account
+of the deployment: 70_Session_Handoff_2026-07-15.md, STEP 3.
+
+- **`cloudflared` Windows service installs with no arguments and silently crash-loops** — no cause
+  logged anywhere. Fixed via direct registry edit of the service's `ImagePath`; regresses on every
+  reinstall/upgrade of the service. Promoted to INVARIANTS.md ("Windows Service Deployment —
+  cloudflared") since it is a re-breakable rule, not a one-off finding.
+- **Wrong-account `cert.pem` silently misroutes `tunnel route dns`** — Fahad's box had a leftover
+  cert for a different Cloudflare account (`axion`/`harba.net`), so the first `route dns` attempt
+  created `call-qa.tech.harba.net` instead of `call-qa.tech` with no error. Always check the CNAME
+  in the `route dns` output. Orphan tunnel `call-qa` (`d568bb22`) left on the `harba.net` account —
+  harmless, delete when convenient.
+- **Docker Desktop 500s on port rebind** — `"ports are not available ... /forwards/expose returned
+  unexpected status: 500"` when changing a published port on a running service; `compose up -d`
+  alone doesn't clear it, needs `compose rm -sf <service>` then `up -d` (scoped to the one
+  service, not `--force-recreate`).
+- **CLOSED — internal ports on `0.0.0.0`.** `infra/docker-compose.app.yml:131` (nginx port 80),
+  the last remaining `0.0.0.0`-bound port on the stack, moved to `127.0.0.1:80:80` (commit
+  `28ee65d`). Closes the "(except nginx port 80)" exception that previously lived in
+  INVARIANTS.md's port rule.
+- **CLOSED — `CORS_ORIGINS` had a stray `http://localhost:5173` Vite-dev origin in
+  `infra/.env.prod`.** Now `https://call-qa.tech` only.
+- Unrelated finding, flagged not fixed: Fahad's machine also runs a Caddy instance
+  (`D:\claude\axion\infrastructure\https\caddy.exe`) listening on `192.168.8.10:8000` with live
+  external connections from non-LAN IPs. Belongs to a different project — flagged to Fahad, not
+  touched here.
+
 ## P1 — Before First Paying Customer
 
 - **API key separation + ZDR confirmation** — single shared Groq API key; no per-tenant key isolation; Zero Data Retention not confirmed with Groq for customer audio transcripts
@@ -68,7 +111,7 @@
 - **Playwright browser pool** — one Chromium process per PDF export request; rate-limited to 5/min as mitigation; move to Celery `io_queue` task before concurrent export load becomes real.
 - **dedup constraint removed in deploy/fahad-demo** — `uq_calls_tenant_audio_path` dropped for demo usability. Same file can now create multiple Call rows. Must re-evaluate before first paying customer — either re-add constraint with proper UI duplicate handling, or implement soft dedup in application layer.
 - **auth.py RLS bypass scope** — `platform_bypass=true` covers the full login transaction. Correct long-term fix: `get_db_no_rls` dependency scoped to auth endpoints only.
-- **infra/.env secret management** — `infra/.env` contains live secrets and must not be committed. Verify `.gitignore` coverage. Both `.env` and `.env.prod` must stay in sync for every secret rotation — `.env` silently wins on docker compose when both files are present.
+- **infra/.env secret management** — `infra/.env` contains live secrets and must not be committed. Verify `.gitignore` coverage. Both `.env` and `.env.prod` must stay in sync for every secret rotation. **CORRECTED 2026-07-15 (session 2):** the prior claim here — "`.env` silently wins on docker compose when both files are present" — is wrong for the app.yml stack. Precedence is per-invocation: whichever `--env-file` flag (if any) that container's compose command passes wins. On Fahad's box, `cq_api` and `cq_worker_io` (`docker-compose.app.yml --env-file infra/.env.prod`) read `.env.prod`; `cq_worker_gpu` (`docker-compose.gpu.yml`, no `--env-file` flag) reads `.env` by default. Editing one file does not reliably reach all containers. Always verify with `docker exec <container> printenv <VAR> | cut -c1-6`, never by reading files. See 70_Session_Handoff_2026-07-15.md.
 
 ---
 
@@ -92,4 +135,8 @@
 | Speaker label inversion | Active — controlled | Use demo audio where agent speaks first AND longer; duration heuristic handles it |
 | RTX 5060 Blackwell CUDA compatibility | Resolved | CT2 4.8.0 + CUDA 12.8 base image + PyTorch monkeypatch. Full pipeline working. See 64_Fahad_Demo_Deployment_Postmortem.md. |
 | WhisperX large-v2 first-run model download (~3 GB) | Active — timing risk | Budget 10-15 min for first container start; pre-pull on demo machine the night before |
-| Audio playback broken in frontend | Active | H1 backend fix applied; frontend disabled due to CORS. Do not demo audio playback until CORS confirmed on demo hostname. |
+| Audio playback broken in frontend | Active | H1 backend fix applied; frontend disabled due to CORS. Do not demo audio playback until CORS confirmed on demo hostname. **Note 2026-07-16:** `CORS_ORIGINS` is now scoped to `https://call-qa.tech`, the current demo hostname — the precondition this risk names may now be met, but audio playback itself was not re-tested this session. Verify before assuming resolved. |
+| talk_balance_score is structurally meaningless on single-speaker diarization | Active — open, unfixed | When diarization legitimately yields one speaker (reproducible with current gTTS test fixtures, possible on any real call pyannote fails to split), `talk_balance_score` is 0.0 but the UI still renders a normal-looking overall score (76-82%) — the zero is indistinguishable from a genuine "agent dominated the call" finding. No detection or UI flag exists. See 70_Session_Handoff_2026-07-15.md. (Supersedes the retracted "diarization collapse on Blackwell" claim — that was a gTTS test-fixture defect, not a Blackwell/pyannote bug; see the corrected entry above.) **Confirmed 2026-07-16: not a pipeline-wide problem** — real calls through the Cloudflare Tunnel produced nonzero `talk_balance_score` (0.3196 / 0.5097 / 0.2903 observed). Risk is scoped to the single-speaker-diarization edge case only; product decision to leave unfixed stands. |
+| gpt-oss `json_validate_failed` (~40% raw rate) on Groq | Active — mitigated, not fixed | `max_retries=4` → ~2.6% residual. No OpenRouter fallback available on demo machine (`OPENROUTER_API_KEY` is 401, no fallback leg) — any residual failure is a hard call failure. **HIGHEST remaining demo risk as of 2026-07-16** — Cloudflare Tunnel closed the networking/access risk category, leaving this as the top open item. |
+| MODEL_CACHE_HF / MODEL_CACHE_TORCH undefined on demo machine | Fixed this session | Added to `infra/.env`. Previously in no env file (only `.env.example`), so the model cache was empty and WhisperX re-downloaded ~360MB per fresh container. |
+| Public URL reachability / single point of network failure | Resolved 2026-07-16 | `call-qa.tech` live via Cloudflare Tunnel (free plan), verified end-to-end (login, WebSocket, call scoring survive a tunnel hop and a reboot). Replaces Tailscale Funnel, which was already off before this session. See 70_Session_Handoff_2026-07-15.md STEP 3. |
